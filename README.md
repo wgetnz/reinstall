@@ -1,8 +1,6 @@
 # reinstall
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/dc679a17751448628fe6d8ac35e26eed)](https://app.codacy.com/gh/wgetnz/reinstall/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![CodeFactor](https://www.codefactor.io/repository/github/wgetnz/reinstall/badge)](https://www.codefactor.io/repository/github/wgetnz/reinstall)
-[![Lines of Code](https://tokei.rs/b1/github/wgetnz/reinstall?category=code&style=flat)](https://github.com/XAMPPRocky/tokei_rs)
+
 
 一键重装脚本
 
@@ -146,7 +144,7 @@ bash reinstall.sh windows \
      --iso 'https://drive.massgrave.dev/en-us_windows_10_enterprise_ltsc_2021_x64_dvd_d289cf96.iso'
 ```
 
-![Installing Windows](https://github.com/wgetnz/reinstall/assets/7548515/07c1aea2-1ce3-4967-904f-aaf9d6eec3f7)
+![Installing Windows]
 
 参数说明:
 
@@ -161,7 +159,7 @@ Windows Server 2022 SERVERDATACENTER
 
 使用 `Dism++` 文件菜单 > 打开映像文件，选择要安装的 iso，可以得到映像名称
 
-![image-name](https://github.com/wgetnz/reinstall/assets/7548515/5aae0a9b-61e2-4f66-bb98-d470a6beaac2)
+![image-name]
 
 1. 支持的系统：
    - Windows Vista 到 11

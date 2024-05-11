@@ -1,0 +1,69 @@
+#cloud-config
+# 顺序 early-commands > 安装系统 > late-commands > 重启进入系统 > cloud-init: runcmd > cloud-init: 其他
+autoinstall:
+  version: 1
+  apt:
+    fallback: offline-install
+  source:
+    id: ubuntu-server-minimal
+    search_drivers: false
+  kernel:
+    package: linux-generic
+  timezone: Asia/Shanghai
+  ssh:
+    allow-pw: false  # 禁用密码登录
+    authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking  # SSH公钥
+    install-server: true
+  early-commands:
+    - |
+      # 解决 20.04 不能识别硬盘
+      mount | grep /isodevice && { losetup -d /dev/loop0; umount -l /isodevice; } || true
+      # 提取 extra.confhome extra.kernel
+      prefix=extra
+      for var in $(grep -o "\b$prefix\.[^ ]*" /proc/cmdline | xargs); do
+          eval "$(echo $var | sed -E "s/$prefix\.([^=]*)=(.*)/\1='\2'/")"
+      done
+      # 生成分区信息
+      xda=$(curl -L "$confhome/get-xda.sh" | sh -s)
+      export xda
+      curl -L "$confhome/ubuntu-storage-early.sh" | sh -s
+      # 内核风味
+      sed -i "s/generic/$kernel/" /run/kernel-meta-package
+      sed -i "/package:/s/generic/$kernel/" /autoinstall.yaml
+      # 禁用 DNS  强制离线安装内核和跳过最后的更新
+      # dig会显示cname结果，cname会以.结尾，grep -v '\.$' 表示去除 cname 结果
+      # echo $(dig +short geoip.ubuntu.com | grep -v '\.$' | head -1) geoip.ubuntu.com >>/etc/hosts
+      # sed -i -E 's/(^nameserver )/#\1/' /etc/resolv.conf
+  late-commands:
+    - |
+      # root ssh 登录
+      echo "PermitRootLogin yes" >/target/etc/ssh/sshd_config.d/01-permitrootlogin.conf
+      # 还原 DNS
+      # sed -i -E 's/^#(nameserver )/\1/' /etc/resolv.conf
+      # 提取 extra.confhome
+      prefix=extra
+      for var in $(grep -o "\b$prefix\.[^ ]*" /proc/cmdline | xargs); do
+          eval "$(echo $var | sed -E "s/$prefix\.([^=]*)=(.*)/\1='\2'/")"
+      done
+      # 下载合并分区脚本
+      cd /target
+      curl -LO $confhome/resize.sh
+      # 升级 cloud-init
+      # curtin in-target --target=/target -- apt update
+      # curtin in-target --target=/target -- apt install --only-upgrade cloud-init
+  user-data:
+    runcmd:
+      - |
+        # 合并分区
+        bash /resize.sh
+    wgetnz_root: false
+    users:
+      - name: root
+        lock_passwd: true  # 锁定root用户密码
+        ssh-authorized-keys:  # 设置SSH公钥
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking
+    chpasswd:
+      expire: false
+      list: |
+        root:*

@@ -1,8 +1,8 @@
 #!/bin/bash
-# shellcheck wgetnz=SC2086
+# shellcheck disable=SC2086
 
 set -eE
-confhome=https://raw.githubusercontent.com/bin456789/reinstall/main
+confhome=https://raw.githubusercontent.com/wgetnz/reinstall/main
 github_proxy=https://mirror.ghproxy.com/https://raw.githubusercontent.com
 
 # https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html
@@ -43,7 +43,7 @@ Usage: $reinstall____ centos   7|8|9
                       windows  --image-name='windows xxx yyy' --iso='http://xxx'
                       netboot.xyz
 
-Manual: https://github.com/bin456789/reinstall
+Manual: https://github.com/wgetnz/reinstall
 
 EOF
     exit 1
@@ -165,7 +165,7 @@ is_have_initrd() {
 }
 
 is_use_firmware() {
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     [ "$nextos_distro" = debian ] && ! is_virt
 }
 
@@ -953,7 +953,7 @@ setos() {
         eval "${step}_image_name='$image_name'"
     }
 
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     setos_dd() {
         test_url $img 'xz|gzip' ${step}_img_type
         eval "${step}_img='$img'"
@@ -1083,7 +1083,7 @@ setos() {
 
     # 集中测试云镜像格式
     if is_use_cloud_image && [ "$step" = finalos ]; then
-        # shellcheck wgetnz=SC2154
+        # shellcheck disable=SC2154
         test_url $finalos_img 'xz|gzip|qemu' finalos_img_type
     fi
 }
@@ -1408,7 +1408,7 @@ is_secure_boot_enabled() {
             reg query 'HKLM\SYSTEM\CurrentControlSet\Control\SecureBoot\State' /v UEFISecureBootEnabled 2>/dev/null | grep 0x1
         else
             # localhost:~# mokutil --sb-state
-            # SecureBoot wgetnzd
+            # SecureBoot disabled
             # Platform is in Setup Mode
             dmesg | grep -i 'Secure boot enabled'
         fi
@@ -1458,7 +1458,7 @@ find_main_disk() {
         # 磁盘 ID: E5FDE61C
         # 磁盘 ID: {92CF6564-9B2E-4348-A3BD-D84E3507EBD7}
         if false; then
-            # https://github.com/bin456789/reinstall/issues/76
+            # https://github.com/wgetnz/reinstall/issues/76
             disk_index=$(wmic logicaldisk where "DeviceID='$c:'" assoc:value /resultclass:Win32_DiskPartition |
                 grep 'DiskIndex=' | cut -d= -f2 | del_cr)
             select_cmd="select disk $disk_index"
@@ -1547,7 +1547,7 @@ collect_netconf() {
             convert_net_str_to_array "$config" DefaultIPGateway gateways
 
             # IPv4
-            # shellcheck wgetnz=SC2154
+            # shellcheck disable=SC2154
             for ((i = 0; i < ${#ips[@]}; i++)); do
                 ip=${ips[i]}
                 subnet=${subnets[i]}
@@ -1577,7 +1577,7 @@ collect_netconf() {
             done
 
             # 网关
-            # shellcheck wgetnz=SC2154
+            # shellcheck disable=SC2154
             for gateway in "${gateways[@]}"; do
                 if [ -n "$ipv4_addr" ] && [[ "$gateway" = *.* ]]; then
                     ipv4_gateway="$gateway"
@@ -1881,7 +1881,7 @@ get_entry_name() {
     printf ')'
 }
 
-# shellcheck wgetnz=SC2154
+# shellcheck disable=SC2154
 build_nextos_cmdline() {
     if [ $nextos_distro = alpine ]; then
         nextos_cmdline="alpine_repo=$nextos_repo modloop=$nextos_modloop"
@@ -1958,7 +1958,7 @@ mod_initrd_debian() {
 
     # hack 2
     # 修改 /var/lib/dpkg/info/netcfg.postinst 运行我们的脚本
-    # shellcheck wgetnz=SC1091,SC2317
+    # shellcheck disable=SC1091,SC2317
     netcfg() {
         #!/bin/sh
         . /usr/share/debconf/confmodule
@@ -2019,7 +2019,7 @@ EOF
         sed "s|@mac_addr|$mac_addr|" |
         sed "s|@netconf|$netconf|" >var/lib/dpkg/info/netcfg.postinst
 
-    # shellcheck wgetnz=SC2317
+    # shellcheck disable=SC2317
     expand_packages() {
         expand_packages_real "$@" | while IFS= read -r line; do
             key_=$(echo "$line" | cut -d' ' -f1)
@@ -2030,8 +2030,8 @@ EOF
                 package="$value"
                 ;;
             Priority:)
-                # shellcheck wgetnz=SC2154
-                if [ "$value" = standard ] && echo "$wgetnzd_list" | grep -qx "$package"; then
+                # shellcheck disable=SC2154
+                if [ "$value" = standard ] && echo "$disabled_list" | grep -qx "$package"; then
                     line="Priority: optional"
                 fi
                 ;;
@@ -2040,13 +2040,13 @@ EOF
         done
     }
 
-    # shellcheck wgetnz=SC2012
+    # shellcheck disable=SC2012
     kver=$(ls -d lib/modules/* | awk -F/ '{print $NF}')
 
     net_retriever=usr/lib/debian-installer/retriever/net-retriever
     sed -i 's/^expand_packages()/expand_packages_real()/' $net_retriever
     insert_into_file $net_retriever after '#!/bin/sh' <<EOF
-wgetnzd_list="
+disabled_list="
 depthcharge-tools-installer
 kickseed-common
 nobootloader
@@ -2100,7 +2100,7 @@ EOF
         # 获取 udeb 列表
         udeb_list=$tmp/udeb_list
         if ! [ -f $udeb_list ]; then
-            # shellcheck wgetnz=SC2154
+            # shellcheck disable=SC2154
             curl -L http://$nextos_deb_hostname/$distro/dists/$nextos_codename/main/debian-installer/binary-$basearch_alt/Packages.gz |
                 zcat | grep 'Filename:' | awk '{print $2}' >$udeb_list
         fi
@@ -2139,7 +2139,7 @@ EOF
     can_use_cloud_kernel() {
         # xen 是 vbd
         # 有些虚拟机用了 ahci，但云内核没有 ahci 驱动
-        # shellcheck wgetnz=SC2317
+        # shellcheck disable=SC2317
         get_disk_controller | grep -Ewq \
             'ata_generic|ata_piix|pata_legacy|nvme|virtio_blk|virtio_scsi|vbd|hv_storvsc|vmw_pvscsi'
     }
@@ -2277,7 +2277,7 @@ EOF
         ethernets_func=ethernets
     fi
 
-    # shellcheck wgetnz=SC2317
+    # shellcheck disable=SC2317
     ip_choose_if() {
         ip -o link | grep "@mac_addr" | awk '{print $2}' | cut -d: -f1
         return
@@ -2305,13 +2305,13 @@ EOF
     # udhcpc:  bound
     # udhcpc6: deconfig
     # udhcpc6: bound
-    # shellcheck wgetnz=SC2317
+    # shellcheck disable=SC2317
     udhcpc() {
         if [ "$1" = deconfig ]; then
             return
         fi
         if [ "$1" = bound ] && [ -n "$ipv6" ]; then
-            # shellcheck wgetnz=SC2154
+            # shellcheck disable=SC2154
             ip -6 addr add "$ipv6" dev "$interface"
             ip link set dev "$interface" up
             return
@@ -2369,7 +2369,7 @@ mod_initrd() {
     # 打开 C:\cygwin\Cygwin.bat ，运行报错
     # 打开桌面的 Cygwin 图标，运行就没问题
 
-    # shellcheck wgetnz=SC2046
+    # shellcheck disable=SC2046
     # nonmatching 是精确匹配路径
     zcat /reinstall-initrd | cpio -idm \
         $(is_in_windows && echo --nonmatching 'dev/console' --nonmatching 'dev/null')
@@ -2480,7 +2480,7 @@ if ! opts=$(getopt -n $0 -o "" --long ci,debug,hold:,sleep:,iso:,image-name:,img
 fi
 
 eval set -- "$opts"
-# shellcheck wgetnz=SC2034
+# shellcheck disable=SC2034
 while true; do
     case "$1" in
     --debug)
@@ -2631,7 +2631,7 @@ if is_efi; then
         bcdedit /enum bootmgr | grep --text -B3 'reinstall' | awk '{print $2}' | grep '{.*}' |
             xargs -I {} cmd /c bcdedit /delete {}
     else
-        # shellcheck wgetnz=SC2046
+        # shellcheck disable=SC2046
         find $(get_maybe_efi_dirs_in_linux) /boot -type f -name 'custom.cfg' -exec rm -f {} \;
 
         install_pkg efibootmgr
@@ -2647,7 +2647,7 @@ if ! is_in_windows && [ -f /etc/default/kexec ]; then
 fi
 
 # 下载 netboot.xyz / 内核
-# shellcheck wgetnz=SC2154
+# shellcheck disable=SC2154
 if is_netboot_xyz; then
     if is_efi; then
         curl -Lo /netboot.xyz.efi $nextos_efi
@@ -2714,7 +2714,7 @@ if is_use_grub; then
         # linux
         if is_efi; then
             # 现在 linux-efi 是使用 reinstall 目录下的 grub
-            # shellcheck wgetnz=SC2046
+            # shellcheck disable=SC2046
             efi_reinstall_dir=$(find $(get_maybe_efi_dirs_in_linux) -type d -name "reinstall" | head -1)
             grub_cfg=$efi_reinstall_dir/grub.cfg
         else
@@ -2844,7 +2844,7 @@ else
     fi
 
     echo "Username: $username"
-    echo "Password: 3aZy8GQpnTS25D"
+    echo "Password: gKKGLEye7pTFmf"
     echo "Reboot to start the installation."
 fi
 

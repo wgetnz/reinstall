@@ -34,7 +34,7 @@ fi
 
 # 找出现在的最后一个分区，也就是系统分区
 # el7 的 lsblk 没有 --sort，所以用其他方法
-# shellcheck wgetnz=2012
+# shellcheck disable=2012
 part_num=$(ls -1v "/dev/$xda"* | tail -1 | grep -o '[0-9]*$')
 part_fstype=$(lsblk -no FSTYPE "/dev/$xda"*"$part_num")
 

@@ -57,7 +57,7 @@ autoinstall:
       - |
         # 合并分区
         bash /resize.sh
-    wgetnz_root: false
+    disable_root: false
     users:
       - name: root
         lock_passwd: true  # 锁定root用户密码

@@ -12,7 +12,7 @@ EOF
 # https://curtin.readthedocs.io/en/latest/topics/storage.html
 size_os=$(lsblk -bn -o SIZE /dev/disk/by-label/os)
 
-# shellcheck wgetnz=SC2154
+# shellcheck disable=SC2154
 if parted "/dev/$xda" print | grep '^Partition Table' | grep gpt; then
     # efi
     if [ -e /dev/disk/by-label/efi ]; then

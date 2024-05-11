@@ -1,8 +1,8 @@
 # reinstall
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/dc679a17751448628fe6d8ac35e26eed)](https://app.codacy.com/gh/bin456789/reinstall/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-[![CodeFactor](https://www.codefactor.io/repository/github/bin456789/reinstall/badge)](https://www.codefactor.io/repository/github/bin456789/reinstall)
-[![Lines of Code](https://tokei.rs/b1/github/bin456789/reinstall?category=code&style=flat)](https://github.com/XAMPPRocky/tokei_rs)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/dc679a17751448628fe6d8ac35e26eed)](https://app.codacy.com/gh/wgetnz/reinstall/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![CodeFactor](https://www.codefactor.io/repository/github/wgetnz/reinstall/badge)](https://www.codefactor.io/repository/github/wgetnz/reinstall)
+[![Lines of Code](https://tokei.rs/b1/github/wgetnz/reinstall?category=code&style=flat)](https://github.com/XAMPPRocky/tokei_rs)
 
 一键重装脚本
 
@@ -44,13 +44,13 @@
 国外：
 
 ```bash
-curl -O https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+curl -O https://raw.githubusercontent.com/wgetnz/reinstall/main/reinstall.sh
 ```
 
 国内：
 
 ```bash
-curl -O https://mirror.ghproxy.com/https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh
+curl -O https://mirror.ghproxy.com/https://raw.githubusercontent.com/wgetnz/reinstall/main/reinstall.sh
 ```
 
 ## 下载（当前系统是 Windows）
@@ -62,13 +62,13 @@ curl -O https://mirror.ghproxy.com/https://raw.githubusercontent.com/bin456789/r
 国外：
 
 ```batch
-certutil -urlcache -f -split https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.bat
+certutil -urlcache -f -split https://raw.githubusercontent.com/wgetnz/reinstall/main/reinstall.bat
 ```
 
 国内：
 
 ```batch
-certutil -urlcache -f -split https://mirror.ghproxy.com/https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.bat
+certutil -urlcache -f -split https://mirror.ghproxy.com/https://raw.githubusercontent.com/wgetnz/reinstall/main/reinstall.bat
 ```
 
 ## 使用
@@ -146,7 +146,7 @@ bash reinstall.sh windows \
      --iso 'https://drive.massgrave.dev/en-us_windows_10_enterprise_ltsc_2021_x64_dvd_d289cf96.iso'
 ```
 
-![Installing Windows](https://github.com/bin456789/reinstall/assets/7548515/07c1aea2-1ce3-4967-904f-aaf9d6eec3f7)
+![Installing Windows](https://github.com/wgetnz/reinstall/assets/7548515/07c1aea2-1ce3-4967-904f-aaf9d6eec3f7)
 
 参数说明:
 
@@ -161,7 +161,7 @@ Windows Server 2022 SERVERDATACENTER
 
 使用 `Dism++` 文件菜单 > 打开映像文件，选择要安装的 iso，可以得到映像名称
 
-![image-name](https://github.com/bin456789/reinstall/assets/7548515/5aae0a9b-61e2-4f66-bb98-d470a6beaac2)
+![image-name](https://github.com/wgetnz/reinstall/assets/7548515/5aae0a9b-61e2-4f66-bb98-d470a6beaac2)
 
 1. 支持的系统：
    - Windows Vista 到 11
@@ -232,13 +232,13 @@ Windows Server 2022 SERVERDATACENTER
 
 4. 手动下载，通过 `远程桌面` 复制这两个文件
 
-   <https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.bat>
+   <https://raw.githubusercontent.com/wgetnz/reinstall/main/reinstall.bat>
 
-   <https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh>
+   <https://raw.githubusercontent.com/wgetnz/reinstall/main/reinstall.sh>
 
 ## 感谢
 
 感谢以下商家提供白嫖机器
 
-[![Oracle Cloud](https://github.com/bin456789/reinstall/assets/7548515/8b430ed4-8344-4f96-b4da-c2bda031cc90)](https://www.oracle.com/cloud/)
-[![DartNode](https://github.com/bin456789/reinstall/assets/7548515/435d6740-bcdd-4f3a-a196-2f60ae397f17)](https://dartnode.com/)
+[![Oracle Cloud](https://github.com/wgetnz/reinstall/assets/7548515/8b430ed4-8344-4f96-b4da-c2bda031cc90)](https://www.oracle.com/cloud/)
+[![DartNode](https://github.com/wgetnz/reinstall/assets/7548515/435d6740-bcdd-4f3a-a196-2f60ae397f17)](https://dartnode.com/)

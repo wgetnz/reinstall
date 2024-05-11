@@ -1,6 +1,6 @@
 #!/bin/ash
 # shellcheck shell=dash
-# shellcheck wgetnz=SC2086,SC3047,SC3036,SC3010,SC3001
+# shellcheck disable=SC2086,SC3047,SC3036,SC3010,SC3001
 # alpine 默认使用 busybox ash
 
 # 命令出错终止运行，将进入到登录界面，防止失联
@@ -172,7 +172,7 @@ is_use_cloud_image() {
 
 setup_nginx() {
     apk add nginx
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     wget $confhome/logviewer.html -O /logviewer.html
     wget $confhome/logviewer-nginx.conf -O /etc/nginx/http.d/default.conf
 
@@ -223,7 +223,7 @@ setup_udev_util_linux() {
 
 get_ttys() {
     prefix=$1
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     wget $confhome/ttys.sh -O- | sh -s $prefix
 }
 
@@ -309,7 +309,7 @@ mod_motd() {
     file=/etc/motd
     if ! [ -e $file.orig ]; then
         cp $file $file.orig
-        # shellcheck wgetnz=SC2016
+        # shellcheck disable=SC2016
         echo "mv "\$mnt$file.orig" "\$mnt$file"" |
             insert_into_file /sbin/setup-disk before 'cleanup_chroot_mounts "\$mnt"'
 
@@ -369,7 +369,7 @@ get_ra_to() {
         # 有时会重复收取，所以设置收一份后退出
         echo "Gathering network info..."
         get_netconf_to ethx
-        # shellcheck wgetnz=SC2154
+        # shellcheck disable=SC2154
         _ra="$(rdisc6 -1 "$ethx")"
         apk del ndisc6
 
@@ -388,7 +388,7 @@ get_netconf_to() {
     slaac | dhcpv6 | rdnss | other) get_ra_to ra ;;
     esac
 
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     # debian initrd 没有 xargs
     case "$1" in
     slaac) echo "$ra" | grep 'Autonomous address conf' | grep Yes && res=1 || res=0 ;;
@@ -403,13 +403,13 @@ get_netconf_to() {
 
 is_ipv4_has_internet() {
     get_netconf_to ipv4_has_internet
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     [ "$ipv4_has_internet" = 1 ]
 }
 
 is_in_china() {
     get_netconf_to is_in_china
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     [ "$is_in_china" = 1 ]
 }
 
@@ -417,7 +417,7 @@ is_in_china() {
 # 没有 dhcpv4 不等于是静态ip，可能是没有 ip
 is_dhcpv4() {
     get_netconf_to dhcpv4
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     [ "$dhcpv4" = 1 ]
 }
 
@@ -445,13 +445,13 @@ is_staticv6() {
 
 is_slaac() {
     get_netconf_to slaac
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     [ "$slaac" = 1 ]
 }
 
 is_dhcpv6() {
     get_netconf_to dhcpv6
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     [ "$dhcpv6" = 1 ]
 }
 
@@ -461,7 +461,7 @@ is_have_ipv6() {
 
 is_enable_other_flag() {
     get_netconf_to other
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     [ "$other" = 1 ]
 }
 
@@ -837,7 +837,7 @@ install_alpine() {
         file=/sbin/setup-disk
         if ! [ -e $file.orig ]; then
             cp $file $file.orig
-            # shellcheck wgetnz=SC2016
+            # shellcheck disable=SC2016
             echo 'apk add --quiet $(select_bootloader_pkg)' |
                 insert_into_file $file after '# install to given mounted root'
         fi
@@ -897,7 +897,7 @@ install_arch_gentoo() {
         chroot $os_dir locale-gen
     }
 
-    # shellcheck wgetnz=SC2317
+    # shellcheck disable=SC2317
     install_arch() {
         # 添加 swap
         create_swap_if_ram_less_than 1024 $os_dir/swapfile
@@ -917,12 +917,12 @@ Include = /etc/pacman.d/mirrorlist
 Include = /etc/pacman.d/mirrorlist
 EOF
         mkdir -p /etc/pacman.d
-        # shellcheck wgetnz=SC2016
+        # shellcheck disable=SC2016
         case "$(uname -m)" in
         x86_64) dir='$repo/os/$arch' ;;
         aarch64) dir='$arch/$repo' ;;
         esac
-        # shellcheck wgetnz=SC2154
+        # shellcheck disable=SC2154
         echo "Server = $mirror/$dir" >/etc/pacman.d/mirrorlist
 
         # 安装系统
@@ -969,14 +969,14 @@ EOF
         chroot $os_dir pacman -Syu --noconfirm linux
     }
 
-    # shellcheck wgetnz=SC2317
+    # shellcheck disable=SC2317
     install_gentoo() {
         # 添加 swap
         create_swap_if_ram_less_than 2048 $os_dir/swapfile
 
         # 解压系统
         apk add tar xz
-        # shellcheck wgetnz=SC2154
+        # shellcheck disable=SC2154
         download "$img" $os_dir/gentoo.tar.xz
         echo "Uncompressing Gentoo..."
         tar xpf $os_dir/gentoo.tar.xz -C $os_dir --xattrs-include='*.*' --numeric-owner
@@ -1134,7 +1134,7 @@ EOF
 
     # 修改密码
     [ "$distro" = gentoo ] && sed -i 's/enforce=everyone/enforce=none/' $os_dir/etc/security/passwdqc.conf
-    echo 'root:3aZy8GQpnTS25D' | chroot $os_dir chpasswd >/dev/null
+    echo 'root:123@@@' | chroot $os_dir chpasswd >/dev/null
     [ "$distro" = gentoo ] && sed -i 's/enforce=none/enforce=everyone/' $os_dir/etc/security/passwdqc.conf
 
     # 网络配置
@@ -1214,7 +1214,7 @@ get_http_file_size_to() {
     fi
 }
 
-# shellcheck wgetnz=SC2154
+# shellcheck disable=SC2154
 dd_gzip_xz() {
     case "$img_type" in
     gzip) prog=gzip ;;
@@ -1275,7 +1275,7 @@ create_part() {
     # wipefs -a /dev/$xda
 
     # xda*1 星号用于 nvme0n1p1 的字母 p
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     if [ "$distro" = windows ]; then
         get_http_file_size_to size_bytes $iso
 
@@ -1480,7 +1480,7 @@ create_cloud_init_network_config() {
     get_netconf_to mac_addr
     apk add yq
 
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     yq -i ".network.version=1 |
            .network.config[0].type=\"physical\" |
            .network.config[0].name=\"$ethx\" |
@@ -1725,7 +1725,7 @@ EOF
     if [ -f $os_dir/etc/redhat-release ]; then
         find_and_mount /boot
         find_and_mount /boot/efi
-        wgetnz_selinux_kdump $os_dir
+        disable_selinux_kdump $os_dir
     fi
 
     # 修复 fedora 38 或以下用静态 ipv6 会掉线
@@ -1755,7 +1755,7 @@ EOF
                 # 可解决 ifupdown dhcp 不支持 24位掩码+不规则网关的问题
                 chroot $os_dir apt update
                 DEBIAN_FRONTEND=noninteractive chroot $os_dir apt install -y netplan.io
-                chroot $os_dir systemctl wgetnz networking resolvconf
+                chroot $os_dir systemctl disable networking resolvconf
                 chroot $os_dir systemctl enable systemd-networkd systemd-resolved
                 rm -f $os_dir/etc/resolv.conf $os_dir/etc/resolv.conf.orig
                 ln -sf ../run/systemd/resolve/stub-resolv.conf $os_dir/etc/resolv.conf
@@ -1810,7 +1810,7 @@ EOF
 
         # 在这里修改密码，而不是用cloud-init，因为我们的默认密码太弱
         sed -i 's/enforce=everyone/enforce=none/' $os_dir/etc/security/passwdqc.conf
-        echo 'root:3aZy8GQpnTS25D' | chroot $os_dir chpasswd >/dev/null
+        echo 'root:123@@@' | chroot $os_dir chpasswd >/dev/null
         sed -i 's/enforce=none/enforce=everyone/' $os_dir/etc/security/passwdqc.conf
 
         # 下载仓库，选择 profile
@@ -1834,7 +1834,7 @@ EOF
 ExecStartPost=-networkctl
 EOF
 
-        # 如果创建了 cloud-init.wgetnzd，重启后网络不受 networkd 管理
+        # 如果创建了 cloud-init.disabled，重启后网络不受 networkd 管理
         # 因为网卡名变回了 ens3 而不是 eth0
         # 因此要删除 networkd 的网卡名匹配
         insert_into_file $ci_file after '^runcmd:' <<EOF
@@ -1875,7 +1875,7 @@ modify_os_on_disk() {
                 # find /mnt/c -iname windows -type d -maxdepth 1
                 # find: /mnt/c/pagefile.sys: Permission denied
                 # find: /mnt/c/swapfile.sys: Permission denied
-                # shellcheck wgetnz=SC2010
+                # shellcheck disable=SC2010
                 if ls -d /os/*/ | grep -i '/windows/' 2>/dev/null; then
                     # 重新挂载为读写、忽略大小写
                     umount /os
@@ -1931,7 +1931,7 @@ allow_root_password_login() {
     fi
 }
 
-wgetnz_selinux_kdump() {
+disable_selinux_kdump() {
     os_dir=$1
     releasever=$(awk -F: '{ print $5 }' <$os_dir/etc/system-release-cpe)
 
@@ -1940,7 +1940,7 @@ wgetnz_selinux_kdump() {
     fi
 
     # selinux
-    sed -i 's/^SELINUX=enforcing/SELINUX=wgetnzd/g' $os_dir/etc/selinux/config
+    sed -i 's/^SELINUX=enforcing/SELINUX=disabled/g' $os_dir/etc/selinux/config
     # https://access.redhat.com/solutions/3176
     if [ "$releasever" -ge 9 ]; then
         chroot $os_dir grubby --update-kernel ALL --args selinux=0
@@ -2005,15 +2005,15 @@ get_ci_installer_part_size() {
 yum() {
     if [ "$distro" = oracle ]; then
         if [ "$releasever" = 7 ]; then
-            chroot /os/ yum -y --wgetnzrepo=* --enablerepo=ol${releasever}_latest "$@"
+            chroot /os/ yum -y --disablerepo=* --enablerepo=ol${releasever}_latest "$@"
         else
-            chroot /os/ dnf -y --wgetnzrepo=* --enablerepo=ol${releasever}_baseos_latest --setopt=install_weak_deps=False "$@"
+            chroot /os/ dnf -y --disablerepo=* --enablerepo=ol${releasever}_baseos_latest --setopt=install_weak_deps=False "$@"
         fi
     else
         if [ "$releasever" = 7 ]; then
-            chroot /os/ yum -y --wgetnzrepo=* --enablerepo=base,updates "$@"
+            chroot /os/ yum -y --disablerepo=* --enablerepo=base,updates "$@"
         else
-            chroot /os/ dnf -y --wgetnzrepo=* --enablerepo=baseos --setopt=install_weak_deps=False "$@"
+            chroot /os/ dnf -y --disablerepo=* --enablerepo=baseos --setopt=install_weak_deps=False "$@"
         fi
     fi
 }
@@ -2142,7 +2142,7 @@ install_qcow_by_copy() {
         cp /etc/resolv.conf /os/etc/resolv.conf
 
         # selinux kdump
-        wgetnz_selinux_kdump /os
+        disable_selinux_kdump /os
 
         # 部分镜像例如 centos7 要手动删除 machine-id
         truncate_machine_id /os
@@ -2239,7 +2239,7 @@ install_qcow_by_copy() {
 
         if is_efi; then
             # oracle linux 文件夹是 redhat
-            # shellcheck wgetnz=SC2010
+            # shellcheck disable=SC2010
             distro_efi=$(cd /os/boot/efi/EFI/ && ls -d -- * | grep -Eiv BOOT)
         fi
 
@@ -2273,7 +2273,7 @@ EOF
 
         # 关闭 os prober，因为 os prober 有时很慢
         cp $os_dir/etc/default/grub $os_dir/etc/default/grub.orig
-        echo 'GRUB_wgetnz_OS_PROBER=true' >>$os_dir/etc/default/grub
+        echo 'GRUB_DISABLE_OS_PROBER=true' >>$os_dir/etc/default/grub
 
         # 更改源
         if is_in_china; then
@@ -2413,7 +2413,7 @@ dd_qcow() {
         dd if=/dev/nbd0 of=/first-1M bs=1M count=1
 
         # 将1M之后 dd到硬盘
-        # shellcheck wgetnz=SC2194
+        # shellcheck disable=SC2194
         case 3 in
         1)
             # BusyBox dd
@@ -2896,7 +2896,7 @@ install_windows() {
         sed -i "s|%installto_partitionid%|1|" /tmp/autounattend.xml
     fi
 
-    # shellcheck wgetnz=SC2010
+    # shellcheck disable=SC2010
     if ei_cfg="$(ls -d /os/installer/sources/* | grep -i ei.cfg)" &&
         grep -i EVAL "$ei_cfg"; then
         # 评估版 iso 需要删除 autounattend.xml 里面的 <Key><Key/>
@@ -2972,12 +2972,12 @@ install_windows() {
 
     # 复制安装脚本
     # https://slightlyovercomplicated.com/2016/11/07/windows-pe-startup-sequence-explained/
-    mv /wim/setup.exe /wim/setup.exe.wgetnzd
+    mv /wim/setup.exe /wim/setup.exe.disabled
 
     # 如果有重复的 Windows/System32 文件夹，会提示找不到 winload.exe 无法引导
     # win7 win10 是 Windows/System32
     # win2016    是 windows/system32
-    # shellcheck wgetnz=SC2010
+    # shellcheck disable=SC2010
     system32_dir=$(ls -d /wim/*/*32 | grep -i windows/system32)
     download $confhome/windows-setup.bat $system32_dir/startnet.cmd
 
@@ -3122,7 +3122,7 @@ install_redhat_ubuntu() {
     grub_cfg=/os/boot/grub/grub.cfg
 
     # 新版grub不区分linux/linuxefi
-    # shellcheck wgetnz=SC2154
+    # shellcheck disable=SC2154
     if [ "$distro" = "ubuntu" ]; then
         download $iso /os/installer/ubuntu.iso
 
@@ -3174,11 +3174,11 @@ mount / -o remount,size=100%
 hwclock -s || true
 
 # 设置密码，安装并打开 ssh
-echo root:3aZy8GQpnTS25D | chpasswd
+echo root:123@@@ | chpasswd
 printf '\nyes' | setup-sshd
 
 extract_env_from_cmdline
-# shellcheck wgetnz=SC2154
+# shellcheck disable=SC2154
 if [ "$hold" = 1 ]; then
     exit
 fi

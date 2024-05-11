@@ -101,7 +101,7 @@ set "replace=%DiskIndex%"
 )) > %tempFile%
 move /y %tempFile% %file%
 
-rename X:\setup.exe.wgetnzd setup.exe
+rename X:\setup.exe.disabled setup.exe
 
 rem 运行 X:\setup.exe 的话
 rem vista 会找不到安装源

@@ -1,7 +1,7 @@
 #cloud-config
 datasource_list: [None]
 timezone: Asia/Shanghai
-wgetnz_root: false
+disable_root: false
 ssh_pwauth: false  # 设置为false，禁用密码登录
 users:
   - name: root
@@ -17,6 +17,6 @@ runcmd:
   - test $(wc -l </etc/ssh/sshd_config) -le 1 && cat /etc/ssh/sshd_config >>/etc/ssh/sshd_config.d/50-cloud-init.conf && rm -f /etc/ssh/sshd_config
   - echo "PermitRootLogin prohibit-password" >/etc/ssh/sshd_config.d/01-permitrootlogin.conf || sed -Ei 's/^#?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
   - systemctl restart sshd || systemctl restart ssh
-  - touch /etc/cloud/cloud-init.wgetnzd
+  - touch /etc/cloud/cloud-init.disabled
   # ubuntu 镜像运行 echo -e '\nDone' ，-e 会被显示出来
   - printf '\n%s\n' 'reinstall done' >/dev/tty0 || true

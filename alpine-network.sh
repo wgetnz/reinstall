@@ -12,7 +12,7 @@ is_in_china=$6
 # 3.16-3.18 $device
 # 3.19 $iface
 # debian $iface
-# shellcheck wgetnz=SC2154
+# shellcheck disable=SC2154
 if [ -n "$iface" ]; then
     ethx="$iface"
 else

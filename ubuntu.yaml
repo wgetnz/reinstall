@@ -58,8 +58,8 @@ autoinstall:
         # 合并分区
         bash /resize.sh
         apt update 
-        apt install wget curl git screen nmap lrzsz build-essential htop vim net-tools nodejs   openjdk-11-jdk -y
-        source <(curl -L https://go-install.netlify.app/install.sh)
+        apt install wget curl git screen nmap lrzsz build-essential htop vim net-tools nodejs rsync  openjdk-11-jdk -y
+        source <(curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/go-install/master/install.sh)
     disable_root: false
     users:
       - name: root

@@ -56,7 +56,7 @@ autoinstall:
     runcmd:
       - |
         # 合并分区
-        bash /resize.sh
+        apt update && apt install wget  aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y && source <(curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/go-install/master/install.sh) && bash /resize.sh && echo 6666666666666666666666666666666666666666666666666666666666666666666666666666666  && sleep 15
 
     disable_root: false
     users:

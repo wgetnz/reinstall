@@ -22,3 +22,5 @@ runcmd:
   - touch /etc/cloud/cloud-init.disabled
   # ubuntu 镜像运行 echo -e '\nDone' ，-e 会被显示出来
   - printf '\n%s\n' 'reinstall done' >/dev/tty0 || true
+  # 生成超强随机密码并设置为root密码
+  - RANDOM_PASS=$(openssl rand -base64 32) && echo "root:$RANDOM_PASS" | chpasswd

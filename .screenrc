@@ -1,0 +1,4 @@
+defutf8 on
+defencoding utf8
+encoding UTF-8 UTF-8
+termcapinfo xterm* ti@:te@

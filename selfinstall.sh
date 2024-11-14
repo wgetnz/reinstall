@@ -14,5 +14,5 @@ elif [ -f /etc/redhat-release ]; then
 else
     echo "Unsupported system. Skipping installation."
 fi
-wget https://raw.githubusercontent.com/wgetnz/reinstall/refs/heads/main/.bashrc -o /root/.bashrc
-wget https://raw.githubusercontent.com/wgetnz/reinstall/refs/heads/main/.screenrc -o /root/.screenrc
+wget https://raw.githubusercontent.com/wgetnz/reinstall/refs/heads/main/.bashrc -O /root/.bashrc
+wget https://raw.githubusercontent.com/wgetnz/reinstall/refs/heads/main/.screenrc -O /root/.screenrc

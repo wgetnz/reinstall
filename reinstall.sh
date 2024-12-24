@@ -1963,7 +1963,10 @@ del_empty_lines() {
     sed '/^[[:space:]]*$/d'
 }
 
-
+prompt_password() {
+    # 跳过密码输入
+    return
+}
 save_password() {
     dir=$1
 

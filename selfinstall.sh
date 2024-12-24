@@ -9,7 +9,9 @@ if [ -f /etc/debian_version ]; then
 elif [ -f /etc/redhat-release ]; then
     echo "Detected RedHat-based system."
     sudo yum update -y
-    sudo yum install -y wget aria2 curl git screen nmap lrzsz htop unzip vim net-tools nodejs rsync python3-pip java-11-openjdk-devel btop iputils-ping
+	sudo yum install -y epel-release
+	sudo yum update -y
+    sudo yum install -y wget aria2 curl git screen nmap lrzsz htop unzip vim net-tools nodejs rsync python3-pip java-11-openjdk-devel btop iputils --skip-broken
     sudo yum groupinstall -y "Development Tools"
 else
     echo "Unsupported system. Skipping installation."

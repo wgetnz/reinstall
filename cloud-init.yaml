@@ -4,7 +4,6 @@ timezone: Asia/Shanghai
 disable_root: false
 ssh_pwauth: true
 user: root
-password: $2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi
 ssh_authorized_keys:
   - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking
 chpasswd:

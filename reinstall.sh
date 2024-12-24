@@ -3493,6 +3493,9 @@ Password of the image will NOT modify.
 密码仅用于 DD 过程中通过 SSH 查看日志。
 镜像的密码不会被修改。
 "
+
+    fi
+    prompt_password
 fi
 
 # 必备组件

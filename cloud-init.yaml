@@ -28,7 +28,6 @@ runcmd:
   - printf '\n%s\n' 'Start installing custom packages...... ' >/dev/tty0 || true
   - apt update && apt install wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y >/dev/tty0 2>&1
   - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/selfinstall.sh | bash >/dev/tty0 2>&1
-  - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/go-install/master/install.sh | bash >/dev/tty0 2>&1
   - touch /etc/cloud/cloud-init.disabled
   # ubuntu 镜像运行 echo -e '\nDone' ，-e 会被显示出来
   - printf '\n%s\n' 'reinstall done' >/dev/tty0 || true

@@ -8,7 +8,7 @@ confhome_cn=https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/r
 # confhome_cn=https://www.ghproxy.cc/https://raw.githubusercontent.com/bin456789/reinstall/main
 
 # 默认密码
-DEFAULT_PASSWORD=3aZy8GQpnTS25D
+#DEFAULT_PASSWORD=3aZy8GQpnTS25D
 
 # 用于判断 reinstall.sh 和 trans.sh 是否兼容
 SCRIPT_VERSION=4BACD833-A585-23BA-6CBB-9AA4E08E0002
@@ -1963,21 +1963,6 @@ del_empty_lines() {
     sed '/^[[:space:]]*$/d'
 }
 
-prompt_password() {
-    while true; do
-        IFS= read -r -p "Password [$DEFAULT_PASSWORD]: " password
-        IFS= read -r -p "Retype password [$DEFAULT_PASSWORD]: " password_confirm
-        password=${password:-$DEFAULT_PASSWORD}
-        password_confirm=${password_confirm:-$DEFAULT_PASSWORD}
-        if [ -z "$password" ]; then
-            error "Passwords is empty. Try again."
-        elif [ "$password" != "$password_confirm" ]; then
-            error "Passwords don't match. Try again."
-        else
-            break
-        fi
-    done
-}
 
 save_password() {
     dir=$1

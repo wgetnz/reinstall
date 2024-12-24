@@ -6,15 +6,17 @@ ssh_pwauth: true
 users:
   - name: root
     lock_passwd: false
+    password: $2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi
+    hashed_passwd: $2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi
 ssh_authorized_keys:
   - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking
 chpasswd:
   expire: false
   list: |
-    root:@PASSWORD@
+    root:$2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi
   users:
     - name: root
-      password: "@PASSWORD@"
+      password: "$2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi"
       type: hash
 runcmd:
   # opensuse tumbleweed 镜像有 /etc/ssh/sshd_config.d/ 文件夹，没有 /etc/ssh/sshd_config，有/usr/etc/ssh/sshd_config

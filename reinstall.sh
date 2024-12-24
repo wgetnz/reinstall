@@ -1967,6 +1967,7 @@ prompt_password() {
     # 跳过密码输入
     return
 }
+
 save_password() {
     dir=$1
 

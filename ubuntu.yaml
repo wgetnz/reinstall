@@ -5,33 +5,54 @@ autoinstall:
   apt:
     fallback: offline-install
   source:
-    id: ubuntu-server-minimal
-    search_drivers: false
+    id: "@SOURCE_ID@"
   kernel:
     package: linux-generic
   timezone: Asia/Shanghai
   ssh:
-    allow-pw: false  # 禁用密码登录
-    authorized-keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking  # SSH公钥
+    allow-pw: true
+    authorized-keys: []
     install-server: true
   early-commands:
     - |
       # 解决 20.04 不能识别硬盘
+      # https://askubuntu.com/questions/1302392/ubuntu-server-20-04-setup-stuck-at-block-probing-did-not-discover-any-disks
       mount | grep /isodevice && { losetup -d /dev/loop0; umount -l /isodevice; } || true
-      # 提取 extra.confhome extra.kernel
+
+      # 提取 extra_confhome extra_kernel
       prefix=extra
-      for var in $(grep -o "\b$prefix\.[^ ]*" /proc/cmdline | xargs); do
-          eval "$(echo $var | sed -E "s/$prefix\.([^=]*)=(.*)/\1='\2'/")"
+      for var in $(grep -o "\b${prefix}_[^ ]*" /proc/cmdline | xargs); do
+          eval "$(echo $var | sed -E "s/${prefix}_([^=]*)=(.*)/\1='\2'/")"
       done
+
       # 生成分区信息
       xda=$(curl -L "$confhome/get-xda.sh" | sh -s)
       export xda
       curl -L "$confhome/ubuntu-storage-early.sh" | sh -s
+
+      # 要安装的版本
+      # 有的镜像只有一个版本，没有 install-sources.yaml
+      # 因此提取不到 $source_id，此时 $source_id 参数为空
+      if [ -n "$source_id" ]; then
+          sed -i "s/@SOURCE_ID@/$source_id/" /autoinstall.yaml
+      else
+          sed -i "/@SOURCE_ID@/d" /autoinstall.yaml
+      fi
+
       # 内核风味
+      # https://bugs.launchpad.net/subiquity/+bug/1989353
       sed -i "s/generic/$kernel/" /run/kernel-meta-package
       sed -i "/package:/s/generic/$kernel/" /autoinstall.yaml
+
+      # 跳过最后的更新
+      cp /usr/sbin/chroot /usr/sbin/chroot.bin
+      cat >/usr/sbin/chroot <<EOF
+      #!/bin/sh
+      [ "\$2" = "unattended-upgrades" ] || /usr/sbin/chroot.bin "\$@"
+      EOF
+
       # 禁用 DNS  强制离线安装内核和跳过最后的更新
+      # 但安装器会配置时区和写入最近的mirror到/etc/apt/sources.list 所以要提前解析
       # dig会显示cname结果，cname会以.结尾，grep -v '\.$' 表示去除 cname 结果
       # echo $(dig +short geoip.ubuntu.com | grep -v '\.$' | head -1) geoip.ubuntu.com >>/etc/hosts
       # sed -i -E 's/(^nameserver )/#\1/' /etc/resolv.conf
@@ -39,16 +60,20 @@ autoinstall:
     - |
       # root ssh 登录
       echo "PermitRootLogin yes" >/target/etc/ssh/sshd_config.d/01-permitrootlogin.conf
+
       # 还原 DNS
       # sed -i -E 's/^#(nameserver )/\1/' /etc/resolv.conf
-      # 提取 extra.confhome
+
+      # 提取 extra_confhome
       prefix=extra
-      for var in $(grep -o "\b$prefix\.[^ ]*" /proc/cmdline | xargs); do
-          eval "$(echo $var | sed -E "s/$prefix\.([^=]*)=(.*)/\1='\2'/")"
+      for var in $(grep -o "\b${prefix}_[^ ]*" /proc/cmdline | xargs); do
+          eval "$(echo $var | sed -E "s/${prefix}_([^=]*)=(.*)/\1='\2'/")"
       done
+
       # 下载合并分区脚本
       cd /target
       curl -LO $confhome/resize.sh
+
       # 升级 cloud-init
       # curtin in-target --target=/target -- apt update
       # curtin in-target --target=/target -- apt install --only-upgrade cloud-init
@@ -57,14 +82,9 @@ autoinstall:
       - |
         # 合并分区
         bash /resize.sh
-
     disable_root: false
     users:
       - name: root
-        lock_passwd: true  # 锁定root用户密码
-        ssh-authorized-keys:  # 设置SSH公钥
-          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking
+        lock_passwd: false
     chpasswd:
       expire: false
-      list: |
-        root:*

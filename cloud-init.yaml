@@ -2,14 +2,13 @@
 datasource_list: [None]
 timezone: Asia/Shanghai
 disable_root: false
-ssh_pwauth: false  # 设置为false，禁用密码登录
-users:
-  - name: root
-    lock_passwd: true  # 将root用户的密码锁定
-    ssh-authorized-keys:  # 添加SSH公钥
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking
+ssh_pwauth: true
+user: root
+password: $2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi
+ssh_authorized_keys:
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking
 chpasswd:
-  expire: false
+  expire: False
 runcmd:
   # opensuse tumbleweed 镜像有 /etc/ssh/sshd_config.d/ 文件夹，没有 /etc/ssh/sshd_config，有/usr/etc/ssh/sshd_config
   # opensuse tumbleweed cloud-init 直接创建并写入 /etc/ssh/sshd_config，造成默认配置丢失

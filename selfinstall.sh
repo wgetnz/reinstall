@@ -8,6 +8,10 @@ if [ -f /etc/debian_version ]; then
 	curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/go-install/master/install.sh | bash >/dev/tty0 2>&1
 	wget https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/refs/heads/main/.bashrc -O /root/.bashrc
 	wget https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/refs/heads/main/.screenrc -O /root/.screenrc
+        systemctl stop systemd-resolved
+	systemctl disable systemd-resolved
+ 	rm -rf /etc/resolv.conf
+  	echo -e "options timeout:1 attempts:1 rotate\nnameserver 8.8.8.8\nnameserver 1.1.1.1" >/etc/resolv.conf;
 	
 # 检查是否为RedHat系列
 elif [ -f /etc/redhat-release ]; then

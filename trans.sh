@@ -1900,6 +1900,18 @@ basic_init() {
 
     # frpc
     add_frpc_systemd_service_if_need $os_dir
+    
+    # 启用 cloud-init 服务（如果存在）
+    if is_have_cmd_on_disk $os_dir cloud-init; then
+        info "Enabling cloud-init services"
+        # 启用 cloud-init 相关服务
+        cloud_init_services="cloud-init.service cloud-config.service cloud-final.service cloud-init-local.service"
+        for service in $cloud_init_services; do
+            if chroot $os_dir systemctl list-unit-files | grep -q "^$service"; then
+                chroot $os_dir systemctl enable $service 2>/dev/null || true
+            fi
+        done
+    fi
 }
 
 install_arch_gentoo_aosc() {
@@ -4792,10 +4804,36 @@ EOF
         
         # 下载并应用 cloud-init 配置
         if [ -d $os_dir/etc/cloud ]; then
+            info "Download and configure cloud-init.yaml"
             ci_file=$os_dir/etc/cloud/cloud.cfg.d/99_custom.cfg
             download $confhome/cloud-init.yaml $ci_file
             # 删除注释行，除了第一行
             sed -i '1!{/^[[:space:]]*#/d}' $ci_file
+            
+            # 修改密码 - 检查是否有 @PASSWORD@ 占位符
+            if grep -q '@PASSWORD@' $ci_file; then
+                # 不能用 sed 替换，因为含有特殊字符
+                content=$(cat $ci_file)
+                echo "${content//@PASSWORD@/$(get_password_linux_sha512)}" >$ci_file
+            fi
+            
+            # 修改 ssh 端口
+            if is_need_change_ssh_port; then
+                sed -i "s/@SSH_PORT@/$ssh_port/g" $ci_file
+            else
+                sed -i "/@SSH_PORT@/d" $ci_file
+            fi
+            
+            # swapfile - 如果分区表中已经有swapfile就跳过
+            if ! grep -w swap $os_dir/etc/fstab; then
+                cat <<EOF >>$ci_file
+swap:
+  filename: /swapfile
+  size: auto
+EOF
+            fi
+            
+            echo "Cloud-init configuration applied to $ci_file"
         fi
     }
 

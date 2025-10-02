@@ -21,7 +21,7 @@ chpasswd:
 runcmd:
   # opensuse tumbleweed 镜像有 /etc/ssh/sshd_config.d/ 文件夹，没有 /etc/ssh/sshd_config，有/usr/etc/ssh/sshd_config
   # opensuse tumbleweed cloud-init 直接创建并写入 /etc/ssh/sshd_config，造成默认配置丢失
-  # 下面这行删除 clout-init 创建的 sshd_config
+  # 下面这行删除 cloud-init 创建的 sshd_config
   - test $(wc -l </etc/ssh/sshd_config) -le 1 && cat /etc/ssh/sshd_config >>/etc/ssh/sshd_config.d/50-cloud-init.conf && rm -f /etc/ssh/sshd_config
   - echo "PermitRootLogin prohibit-password" >/etc/ssh/sshd_config.d/01-permitrootlogin.conf || sed -Ei 's/^#?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
   - systemctl restart sshd || systemctl restart ssh

@@ -78,41 +78,13 @@ autoinstall:
       # curtin in-target --target=/target -- apt update
       # curtin in-target --target=/target -- apt install --only-upgrade cloud-init
   user-data:
-    datasource_list: [None]
-    timezone: Asia/Shanghai
-    disable_root: false
-    ssh_pwauth: true
-    users:
-      - name: root
-        lock_passwd: false
-        password: $2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi
-        hashed_passwd: $2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi
-    ssh_authorized_keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBEMbxeShxjM96D1ORCjSN4adloe4uhMKPfljlDo9SoP max@Jking
-    chpasswd:
-      expire: false
-      list: |
-        root:$2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi
-      users:
-        - name: root
-          password: "$2b$12$YhmXI6xidIoYhkWh8uQjOebz5Xjs0sUWJA97ySbHiCPA7WUN7WTGi"
-          type: hash
     runcmd:
       - |
         # 合并分区
         bash /resize.sh
-      # opensuse tumbleweed 镜像有 /etc/ssh/sshd_config.d/ 文件夹，没有 /etc/ssh/sshd_config，有/usr/etc/ssh/sshd_config
-      # opensuse tumbleweed cloud-init 直接创建并写入 /etc/ssh/sshd_config，造成默认配置丢失
-      # 下面这行删除 cloud-init 创建的 sshd_config
-      - test $(wc -l </etc/ssh/sshd_config) -le 1 && cat /etc/ssh/sshd_config >>/etc/ssh/sshd_config.d/50-cloud-init.conf && rm -f /etc/ssh/sshd_config
-      - echo "PermitRootLogin prohibit-password" >/etc/ssh/sshd_config.d/01-permitrootlogin.conf || sed -Ei 's/^#?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
-      - systemctl restart sshd || systemctl restart ssh
-      - printf '\n%s\n' 'Start installing custom packages...... ' >/dev/tty0 || true
-      - apt update && apt install wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y >/dev/tty0 2>&1
-      - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/selfinstall.sh | bash >/dev/tty0 2>&1
-      # 注释掉此行，避免禁用 cloud-init
-      - touch /etc/cloud/cloud-init.disabled
-      # ubuntu 镜像运行 echo -e '\nDone' ，-e 会被显示出来
-      - printf '\n%s\n' 'reinstall done' >/dev/tty0 || true
-      # 生成超强随机密码并设置为root密码
-      #- RANDOM_PASS=$(openssl rand -base64 32) && echo "root:$RANDOM_PASS" | chpasswd
+    disable_root: false
+    users:
+      - name: root
+        lock_passwd: false
+    chpasswd:
+      expire: false

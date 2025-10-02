@@ -4862,14 +4862,32 @@ EOF
             # 创建 NoCloud 数据源目录和文件
             mkdir -p $os_dir/var/lib/cloud/seed/nocloud/
             
-            # 将配置复制到 NoCloud 目录
+            # 将完整的 cloud-init.yaml 内容复制到 NoCloud 目录作为 user-data
             cp $ci_file $os_dir/var/lib/cloud/seed/nocloud/user-data
             
-            # 创建 meta-data 文件
+            # 创建必需的 meta-data 文件（不能为空）
             cat > $os_dir/var/lib/cloud/seed/nocloud/meta-data << 'EOF'
 instance-id: iid-nocloud-manual
 local-hostname: ubuntu
 EOF
+            
+            # 设置正确的权限
+            chmod -R 755 $os_dir/var/lib/cloud/seed/
+            chmod 644 $os_dir/var/lib/cloud/seed/nocloud/user-data
+            chmod 644 $os_dir/var/lib/cloud/seed/nocloud/meta-data
+            
+            # 强制删除可能干扰的配置文件
+            rm -f $os_dir/etc/cloud/cloud.cfg.d/99-installer.cfg
+            rm -f $os_dir/etc/cloud/cloud.cfg.d/subiquity-disable-cloudinit-networking.cfg
+            
+            # 启用 cloud-init 服务
+            info "Enabling cloud-init services"
+            chroot $os_dir systemctl enable cloud-init-local.service
+            chroot $os_dir systemctl enable cloud-init.service  
+            chroot $os_dir systemctl enable cloud-config.service
+            chroot $os_dir systemctl enable cloud-final.service
+            
+            info "Cloud-init NoCloud datasource configured successfully"
             
             echo "Cloud-init configuration applied to $ci_file"
         fi

@@ -48,7 +48,7 @@
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------- | ------------ |
 | <img width="16" height="16" src="https://www.alpinelinux.org/alpine-logo.ico" /> Alpine                                                                                                                                                                                                                                                                                | 3.19, 3.20, 3.21, 3.22                | 256 MB    | 1 GB         |
 | <img width="16" height="16" src="https://www.debian.org/favicon.ico" /> Debian                                                                                                                                                                                                                                                                                         | 9, 10, 11, 12, 13                     | 256 MB    | 1 ~ 1.5 GB ^ |
-| <img width="16" height="16" src="https://github.com/wgetnz/reinstall/assets/7548515/f74b3d5b-085f-4df3-bcc9-8a9bd80bb16d" /> Kali                                                                                                                                                                                                                                   | 滚动                                  | 256 MB    | 1 ~ 1.5 GB ^ |
+|  Kali                                                                                                                                                                                                                                   | 滚动                                  | 256 MB    | 1 ~ 1.5 GB ^ |
 | <img width="16" height="16" src="https://documentation.ubuntu.com/server/_static/favicon.png" /> Ubuntu                                                                                                                                                                                                                                                                | 16.04 LTS - 24.04 LTS, 25.04          | 512 MB \* | 2 GB         |
 | <img width="16" height="16" src="https://img.alicdn.com/imgextra/i1/O1CN01oJnJZg1yK4RzI4Rx2_!!6000000006559-2-tps-118-118.png" /> Anolis                                                                                                                                                                                                                               | 7, 8, 23                              | 512 MB \* | 5 GB         |
 | <img width="16" height="16" src="https://www.redhat.com/favicon.ico" /> RHEL &nbsp;<img width="16" height="16" src="https://almalinux.org/fav/favicon.ico" /> AlmaLinux &nbsp;<img width="16" height="16" src="https://rockylinux.org/favicon.png" /> Rocky &nbsp;<img width="16" height="16" src="https://www.oracle.com/asset/web/favicons/favicon-32.png" /> Oracle | 8, 9, 10                              | 512 MB \* | 5 GB         |
@@ -290,7 +290,7 @@ bash reinstall.sh netboot.xyz
 
 ### 功能 5: 安装 <img width="16" height="16" src="https://blogs.windows.com/wp-content/uploads/prod/2022/09/cropped-Windows11IconTransparent512-32x32.png" /> Windows ISO
 
-![Windows 安装界面](https://github.com/wgetnz/reinstall/assets/7548515/07c1aea2-1ce3-4967-904f-aaf9d6eec3f7)
+![Windows 安装界面]
 
 > [!CAUTION]
 >
@@ -482,7 +482,6 @@ Windows Server 2025 SERVERDATACENTER
 
 打开文件菜单 > 打开映像文件，选择要安装的 iso，即可得到映像名称，所有映像名称都可以安装
 
-![image-name](https://github.com/wgetnz/reinstall/assets/7548515/5aae0a9b-61e2-4f66-bb98-d470a6beaac2)
 
 > [!WARNING]
 > Vista (Server 2008) 和 32 位系统可能会缺少驱动
@@ -520,9 +519,6 @@ Windows Server 2025 SERVERDATACENTER
 
 使用远程桌面登录到服务器，打开设备管理器，找到显卡，选择更新驱动，在列表中选择 `Red Hat VirtIO GPU DOD controller` 即可。不需要提前下载驱动。
 
-![virtio-gpu-1](https://github.com/user-attachments/assets/503e1d82-4fa9-4486-917e-73326ad7c988)
-![virtio-gpu-2](https://github.com/user-attachments/assets/bf3a9af6-13d8-4f93-9d6c-d3b2dbddb37d)
-![virtio-gpu-3](https://github.com/user-attachments/assets/a9006a78-838f-45bf-a556-2dba193d3c03)
 
 </details>
 
@@ -549,5 +545,3 @@ Windows Server 2025 SERVERDATACENTER
 
 感谢以下商家提供白嫖机器
 
-[![Oracle Cloud](https://github.com/wgetnz/reinstall/assets/7548515/8b430ed4-8344-4f96-b4da-c2bda031cc90)](https://www.oracle.com/cloud/)
-[![DartNode](https://github.com/wgetnz/reinstall/assets/7548515/435d6740-bcdd-4f3a-a196-2f60ae397f17)](https://dartnode.com/)

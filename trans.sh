@@ -1905,12 +1905,26 @@ basic_init() {
     if is_have_cmd_on_disk $os_dir cloud-init; then
         info "Enabling cloud-init services"
         # 启用 cloud-init 相关服务
-        cloud_init_services="cloud-init.service cloud-config.service cloud-final.service cloud-init-local.service"
+        cloud_init_services="cloud-init-local.service cloud-init.service cloud-config.service cloud-final.service"
         for service in $cloud_init_services; do
-            if chroot $os_dir systemctl list-unit-files | grep -q "^$service"; then
-                chroot $os_dir systemctl enable $service 2>/dev/null || true
+            echo "Checking service: $service"
+            if chroot $os_dir systemctl list-unit-files "$service" 2>/dev/null | grep -q "$service"; then
+                echo "Enabling $service..."
+                if chroot $os_dir systemctl enable "$service" 2>/dev/null; then
+                    echo "Successfully enabled $service"
+                else
+                    echo "Failed to enable $service"
+                fi
+            else
+                echo "Service $service not found"
             fi
         done
+        
+        # 检查最终状态
+        echo "Final cloud-init services status:"
+        chroot $os_dir systemctl list-unit-files | grep cloud-init || echo "No cloud-init services found"
+    else
+        echo "cloud-init command not found in target system"
     fi
 }
 

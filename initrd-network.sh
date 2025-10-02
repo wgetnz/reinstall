@@ -1,6 +1,9 @@
 #!/bin/ash
 # shellcheck shell=dash
-# alpine / debian initrd 共用此脚本
+# alpine/debian initrd 共用此脚本
+
+# accept_ra 接收 RA + 自动配置网关
+# autoconf  自动配置地址，依赖 accept_ra
 
 mac_addr=$1
 ipv4_addr=$2
@@ -39,9 +42,9 @@ get_ethx() {
     # 2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP qlen 1000\    link/ether 60:45:bd:21:8a:51 brd ff:ff:ff:ff:ff:ff
     # 3: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP800> mtu 1500 qdisc mq master eth0 state UP qlen 1000\    link/ether 60:45:bd:21:8a:51 brd ff:ff:ff
     if false; then
-        ip -o link | grep -i "$mac_addr" | grep -v master | awk '{print $2}' | cut -d: -f1
+        ip -o link | grep -i "$mac_addr" | grep -v master | awk '{print $2}' | cut -d: -f1 | grep .
     else
-        ip -o link | grep -i "$mac_addr" | grep -v master | cut -d' ' -f2 | cut -d: -f1
+        ip -o link | grep -i "$mac_addr" | grep -v master | cut -d' ' -f2 | cut -d: -f1 | grep .
     fi
 }
 
@@ -201,13 +204,14 @@ test_by_wget() {
     fi
 
     # tcp 443 通了就算成功，不管 http 是不是 404
+    # grep -m1 快速返回
     wget -T "$TEST_TIMEOUT" \
         --bind-address="$src" \
         --no-check-certificate \
         --max-redirect 0 \
         --tries 1 \
         -O /dev/null \
-        "$url" 2>&1 | grep -iq connected
+        "$url" 2>&1 | grep -iq -m1 connected
 }
 
 test_by_nc() {
@@ -221,12 +225,12 @@ test_by_nc() {
         "$dst" 443
 }
 
-is_debian() {
-    [ -f /etc/lsb-release ] && grep -iq Debian /etc/lsb-release
+is_debian_kali() {
+    [ -f /etc/lsb-release ] && grep -Eiq 'Debian|Kali' /etc/lsb-release
 }
 
 test_connect() {
-    if is_debian; then
+    if is_debian_kali; then
         test_by_wget "$1" "$2"
     else
         test_by_nc "$1" "$2"
@@ -236,11 +240,11 @@ test_connect() {
 test_internet() {
     for i in $(seq 5); do
         echo "Testing Internet Connection. Test $i... "
-        if is_need_test_ipv4 && test_connect "$(get_first_ipv4_addr | remove_netmask)" "$ipv4_dns1" >/dev/null 2>&1; then
+        if is_need_test_ipv4 && { local current_ipv4_addr; current_ipv4_addr="$(get_first_ipv4_addr | remove_netmask)"; test_connect "$current_ipv4_addr" "$ipv4_dns1" >/dev/null 2>&1 || test_connect "$current_ipv4_addr" "$ipv4_dns2" >/dev/null 2>&1; }; then
             echo "IPv4 has internet."
             ipv4_has_internet=true
         fi
-        if is_need_test_ipv6 && test_connect "$(get_first_ipv6_addr | remove_netmask)" "$ipv6_dns1" >/dev/null 2>&1; then
+        if is_need_test_ipv6 && { local current_ipv6_addr; current_ipv6_addr="$(get_first_ipv6_addr | remove_netmask)"; test_connect "$current_ipv6_addr" "$ipv6_dns1" >/dev/null 2>&1 || test_connect "$current_ipv6_addr" "$ipv6_dns2" >/dev/null 2>&1; }; then
             echo "IPv6 has internet."
             ipv6_has_internet=true
         fi
@@ -254,25 +258,43 @@ test_internet() {
 flush_ipv4_config() {
     ip -4 addr flush scope global dev "$ethx"
     ip -4 route flush dev "$ethx"
+    # DHCP 获取的 IP 不是重装前的 IP 时，一并删除 DHCP 获取的 DNS，以防 DNS 无效
+    sed -i "/\./d" /etc/resolv.conf
 }
+
+should_disable_dhcpv4=false
+should_disable_accept_ra=false
+should_disable_autoconf=false
 
 flush_ipv6_config() {
-    # 是否临时禁用 ra / slaac
-    if [ "$1" = true ]; then
+    if $should_disable_accept_ra; then
+        echo 0 >"/proc/sys/net/ipv6/conf/$ethx/accept_ra"
+    fi
+    if $should_disable_autoconf; then
         echo 0 >"/proc/sys/net/ipv6/conf/$ethx/autoconf"
     fi
-
     ip -6 addr flush scope global dev "$ethx"
     ip -6 route flush dev "$ethx"
+    # DHCP 获取的 IP 不是重装前的 IP 时，一并删除 DHCP 获取的 DNS，以防 DNS 无效
+    sed -i "/:/d" /etc/resolv.conf
 }
 
-ethx=$(get_ethx)
+for i in $(seq 20); do
+    if ethx=$(get_ethx); then
+        break
+    fi
+    sleep 1
+done
+
 if [ -z "$ethx" ]; then
     echo "Not found network card: $mac_addr"
     exit
 fi
 
 echo "Configuring $ethx ($mac_addr)..."
+
+# 不开启 lo 则 frp 无法连接 127.0.0.1 22
+ip link set dev lo up
 
 # 开启 ethx
 ip link set dev "$ethx" up
@@ -329,7 +351,7 @@ else
     dhcpcd)
         # https://gitlab.alpinelinux.org/alpine/aports/-/blob/master/main/dhcpcd/dhcpcd.pre-install
         grep -q dhcpcd /etc/group || addgroup -S dhcpcd
-        grep -q dhcpcd /etc/passwd || adduser -S -D \
+        grep -q dhcpcd /etc/passwd || adduser -S -D -H \
             -h /var/lib/dhcpcd \
             -s /sbin/nologin \
             -G dhcpcd \
@@ -347,6 +369,10 @@ else
             sleep $DNS_FILE_TIMEOUT                # 需要等待写入 dns
             dhcpcd -x "$ethx"                      # 终止
         fi
+        # autoconf 和 accept_ra 会被 dhcpcd 自动关闭，因此需要重新打开
+        # 如果没重新打开，重新运行 dhcpcd 命令依然可以正常生成 slaac 地址和路由
+        sysctl -w "net.ipv6.conf.$ethx.autoconf=1"
+        sysctl -w "net.ipv6.conf.$ethx.accept_ra=1"
         ;;
     esac
 fi
@@ -365,22 +391,23 @@ done
 # 由于还没设置静态ip，所以有条目表示有动态地址
 is_have_ipv4_addr && dhcpv4=true || dhcpv4=false
 is_have_ipv6_addr && dhcpv6_or_slaac=true || dhcpv6_or_slaac=false
-should_disable_ra_slaac=false
+is_have_ipv6_gateway && ra_has_gateway=true || ra_has_gateway=false
 
-# 如果自动获取的 IPv4 地址不是重装前的，则使用之前的
+# 如果自动获取的 IP 不是重装前的，则改成静态，使用之前的 IP
+# 只比较 IP，不比较掩码/网关，因为
+# 1. 假设掩码/网关导致无法上网，后面也会检测到并改成静态
+# 2. openSUSE wicked dhcpv6 是 64 位掩码，aws lightsail 模板上的也是，而其它 dhcpv6 软件都是 128 位掩码
 if $dhcpv4 && [ -n "$ipv4_addr" ] && [ -n "$ipv4_gateway" ] &&
-    ! [ "$ipv4_addr" = "$(get_first_ipv4_addr)" ]; then
-    echo "IPv4 address auto obtained is different from old system."
-    dhcpv4=false
+    ! [ "$(echo "$ipv4_addr" | cut -d/ -f1)" = "$(get_first_ipv4_addr | cut -d/ -f1)" ]; then
+    echo "IPv4 address obtained from DHCP is different from old system."
+    should_disable_dhcpv4=true
     flush_ipv4_config
 fi
-
-# 如果自动获取的 IPv6 地址不是重装前的，则使用之前的
 if $dhcpv6_or_slaac && [ -n "$ipv6_addr" ] && [ -n "$ipv6_gateway" ] &&
-    ! [ "$ipv6_addr" = "$(get_first_ipv6_addr)" ]; then
-    echo "IPv6 address auto obtained is different from old system."
-    dhcpv6_or_slaac=false
-    should_disable_ra_slaac=true
+    ! [ "$(echo "$ipv6_addr" | cut -d/ -f1)" = "$(get_first_ipv6_addr | cut -d/ -f1)" ]; then
+    echo "IPv6 address obtained from SLAAC/DHCPv6 is different from old system."
+    should_disable_accept_ra=true
+    should_disable_autoconf=true
     flush_ipv6_config
 fi
 
@@ -393,25 +420,27 @@ ipv4_has_internet=false
 ipv6_has_internet=false
 test_internet
 
-# 如果 IPv4 无法上网，并且自动获取的网关不是重装前的网关，则改成静态
+# 如果无法上网，并且自动获取的 掩码/网关 不是重装前的，则改成静态
+# ip_addr 包括 IP/掩码，所以可以用来判断掩码是否不同
+# IP 不同的情况在前面已经改成静态了
 if ! $ipv4_has_internet &&
     $dhcpv4 && [ -n "$ipv4_addr" ] && [ -n "$ipv4_gateway" ] &&
-    ! [ "$ipv4_gateway" = "$(get_first_ipv4_gateway)" ]; then
-    echo "IPv4 gateway auto obtained is different from old system."
-    dhcpv4=false
+    ! { [ "$ipv4_addr" = "$(get_first_ipv4_addr)" ] && [ "$ipv4_gateway" = "$(get_first_ipv4_gateway)" ]; }; then
+    echo "IPv4 netmask/gateway obtained from DHCP is different from old system."
+    should_disable_dhcpv4=true
     flush_ipv4_config
     add_missing_ipv4_config
     test_internet
 fi
-
-# 如果 IPv6 无法上网，并且自动获取的网关不是重装前的网关，则改成静态
+# 有可能是静态 IPv6 但能从 RA 获取到网关，因此加上 || $ra_has_gateway
 if ! $ipv6_has_internet &&
-    $dhcpv6_or_slaac && [ -n "$ipv6_addr" ] && [ -n "$ipv6_gateway" ] &&
-    ! [ "$ipv6_gateway" = "$(get_first_ipv6_gateway)" ]; then
-    echo "IPv6 gateway auto obtained is different from old system."
-    dhcpv6_or_slaac=false
-    should_disable_ra_slaac=true
-    flush_ipv6_config true
+    { $dhcpv6_or_slaac || $ra_has_gateway; } &&
+    [ -n "$ipv6_addr" ] && [ -n "$ipv6_gateway" ] &&
+    ! { [ "$ipv6_addr" = "$(get_first_ipv6_addr)" ] && [ "$ipv6_gateway" = "$(get_first_ipv6_gateway)" ]; }; then
+    echo "IPv6 netmask/gateway obtained from SLAAC/DHCPv6 is different from old system."
+    should_disable_accept_ra=true
+    should_disable_autoconf=true
+    flush_ipv6_config
     add_missing_ipv6_config
     test_internet
 fi
@@ -420,20 +449,37 @@ fi
 # 1 甲骨文云管理面板添加ipv6地址然后取消
 #   依然会分配ipv6地址，但ipv6没网络
 #   此时alpine只会用ipv6下载apk，而不用会ipv4下载
-# 2 有ipv4地址但没有ipv4网关的情况(vultr)，aria2会用ipv4下载
-if $ipv4_has_internet && ! $ipv6_has_internet; then
-    echo 0 >"/proc/sys/net/ipv6/conf/$ethx/accept_ra"
-    ip -6 addr flush scope global dev "$ethx"
-elif ! $ipv4_has_internet && $ipv6_has_internet; then
-    ip -4 addr flush scope global dev "$ethx"
+# 2 有ipv4地址但没有ipv4网关的情况(vultr $2.5 ipv6 only)，aria2会用ipv4下载
+
+# 假设 ipv4 ipv6 在不同网卡，ipv4 能上网但 ipv6 不能上网，这时也要删除 ipv6
+# 不能用 ipv4_has_internet && ! ipv6_has_internet 判断，因为它判断的是同一个网卡
+if ! $ipv4_has_internet; then
+    if $dhcpv4; then
+        should_disable_dhcpv4=true
+    fi
+    flush_ipv4_config
+fi
+if ! $ipv6_has_internet; then
+    # 防止删除 IPv6 后再次通过 SLAAC 获得
+    # 不用判断 || $ra_has_gateway ，因为没有 IPv6 地址但有 IPv6 网关时，不会出现下载问题
+    if $dhcpv6_or_slaac; then
+        should_disable_accept_ra=true
+        should_disable_autoconf=true
+    fi
+    flush_ipv6_config
 fi
 
 # 如果联网了，但没获取到默认 DNS，则添加我们的 DNS
-if $ipv4_has_internet && ! { [ -e /etc/resolv.conf ] && is_have_ipv4_dns; }; then
+
+# 有一种情况是，多网卡，且能上网的网卡先完成了这个脚本，不能上网的网卡后完成
+# 无法上网的网卡通过 flush_ipv4_config 删除了不能上网的 IP 和 dns
+# （原计划是删除无法上网的网卡 dhcp4 获取的 dns，但实际上无法区分）
+# 因此这里直接添加 dns，不判断是否联网
+if ! is_have_ipv4_dns; then
     echo "nameserver $ipv4_dns1" >>/etc/resolv.conf
     echo "nameserver $ipv4_dns2" >>/etc/resolv.conf
 fi
-if $ipv6_has_internet && ! { [ -e /etc/resolv.conf ] && is_have_ipv6_dns; }; then
+if ! is_have_ipv6_dns; then
     echo "nameserver $ipv6_dns1" >>/etc/resolv.conf
     echo "nameserver $ipv6_dns2" >>/etc/resolv.conf
 fi
@@ -442,7 +488,10 @@ fi
 netconf="/dev/netconf/$ethx"
 mkdir -p "$netconf"
 $dhcpv4 && echo 1 >"$netconf/dhcpv4" || echo 0 >"$netconf/dhcpv4"
-$should_disable_ra_slaac && echo 1 >"$netconf/should_disable_ra_slaac" || echo 0 >"$netconf/should_disable_ra_slaac"
+$dhcpv6_or_slaac && echo 1 >"$netconf/dhcpv6_or_slaac" || echo 0 >"$netconf/dhcpv6_or_slaac"
+$should_disable_dhcpv4 && echo 1 >"$netconf/should_disable_dhcpv4" || echo 0 >"$netconf/should_disable_dhcpv4"
+$should_disable_accept_ra && echo 1 >"$netconf/should_disable_accept_ra" || echo 0 >"$netconf/should_disable_accept_ra"
+$should_disable_autoconf && echo 1 >"$netconf/should_disable_autoconf" || echo 0 >"$netconf/should_disable_autoconf"
 $is_in_china && echo 1 >"$netconf/is_in_china" || echo 0 >"$netconf/is_in_china"
 echo "$ethx" >"$netconf/ethx"
 echo "$mac_addr" >"$netconf/mac_addr"

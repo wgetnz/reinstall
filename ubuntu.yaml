@@ -88,3 +88,10 @@ autoinstall:
         lock_passwd: false
     chpasswd:
       expire: false
+      # 20.04 arm 需要
+      list: |
+        root:3aZy8GQpnTS25D
+      users:
+        - name: root
+          password: 3aZy8GQpnTS25D
+          type: text

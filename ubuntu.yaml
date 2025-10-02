@@ -103,14 +103,15 @@ autoinstall:
         bash /resize.sh
       # opensuse tumbleweed 镜像有 /etc/ssh/sshd_config.d/ 文件夹，没有 /etc/ssh/sshd_config，有/usr/etc/ssh/sshd_config
       # opensuse tumbleweed cloud-init 直接创建并写入 /etc/ssh/sshd_config，造成默认配置丢失
-      # 下面这行删除 clout-init 创建的 sshd_config
+      # 下面这行删除 cloud-init 创建的 sshd_config
       - test $(wc -l </etc/ssh/sshd_config) -le 1 && cat /etc/ssh/sshd_config >>/etc/ssh/sshd_config.d/50-cloud-init.conf && rm -f /etc/ssh/sshd_config
       - echo "PermitRootLogin prohibit-password" >/etc/ssh/sshd_config.d/01-permitrootlogin.conf || sed -Ei 's/^#?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
       - systemctl restart sshd || systemctl restart ssh
       - printf '\n%s\n' 'Start installing custom packages...... ' >/dev/tty0 || true
       - apt update && apt install wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y >/dev/tty0 2>&1
       - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/selfinstall.sh | bash >/dev/tty0 2>&1
-      - touch /etc/cloud/cloud-init.disabled
+      # 注释掉此行，避免禁用 cloud-init
+      # - touch /etc/cloud/cloud-init.disabled
       # ubuntu 镜像运行 echo -e '\nDone' ，-e 会被显示出来
       - printf '\n%s\n' 'reinstall done' >/dev/tty0 || true
       # 生成超强随机密码并设置为root密码

@@ -4789,6 +4789,14 @@ EOF
         fi
 
         restore_resolv_conf $os_dir
+        
+        # 下载并应用 cloud-init 配置
+        if [ -d $os_dir/etc/cloud ]; then
+            ci_file=$os_dir/etc/cloud/cloud.cfg.d/99_custom.cfg
+            download $confhome/cloud-init.yaml $ci_file
+            # 删除注释行，除了第一行
+            sed -i '1!{/^[[:space:]]*#/d}' $ci_file
+        fi
     }
 
     efi_mount_opts=$(
@@ -5021,7 +5029,7 @@ EOF
 
     # 最后才删除 cloud-init
     # 因为生成 netplan/sysconfig 网络配置要用目标系统的 cloud-init
-    remove_cloud_init /os
+    # remove_cloud_init /os  # 注释掉此行，保留 cloud-init
 
     # 删除 swapfile
     swapoff -a

@@ -28,8 +28,12 @@ runcmd:
   - printf '\n%s\n' 'Start installing custom packages...... ' >/dev/tty0 || true
   - apt update && apt install wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y >/dev/tty0 2>&1
   - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/selfinstall.sh | bash >/dev/tty0 2>&1
+  - printf '\n%s\n' '打开 BBR' >/dev/tty0 || true
+  - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/install_kernel.sh | bash >/dev/tty0 2>&1
   - touch /etc/cloud/cloud-init.disabled
   # ubuntu 镜像运行 echo -e '\nDone' ，-e 会被显示出来
-  - printf '\n%s\n' 'reinstall done' >/dev/tty0 || true
+  - printf '\n%s\n' '安装完成...reboot...' >/dev/tty0 || true
+  - sleep 3
+  - reboot
   # 生成超强随机密码并设置为root密码
   #- RANDOM_PASS=$(openssl rand -base64 32) && echo "root:$RANDOM_PASS" | chpasswd

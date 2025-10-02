@@ -4847,6 +4847,30 @@ swap:
 EOF
             fi
             
+            # 确保 cloud-init 未被禁用
+            rm -f $os_dir/etc/cloud/cloud-init.disabled
+            rm -f $os_dir/etc/cloud/cloud.cfg.d/*disable*
+            
+            # 配置数据源 - 关键修复！
+            cat > $os_dir/etc/cloud/cloud.cfg.d/90_dpkg.cfg << 'EOF'
+datasource_list: [NoCloud, ConfigDrive, None]
+datasource:
+  NoCloud:
+    seedfrom: /var/lib/cloud/seed/nocloud/
+EOF
+
+            # 创建 NoCloud 数据源目录和文件
+            mkdir -p $os_dir/var/lib/cloud/seed/nocloud/
+            
+            # 将配置复制到 NoCloud 目录
+            cp $ci_file $os_dir/var/lib/cloud/seed/nocloud/user-data
+            
+            # 创建 meta-data 文件
+            cat > $os_dir/var/lib/cloud/seed/nocloud/meta-data << 'EOF'
+instance-id: iid-nocloud-manual
+local-hostname: ubuntu
+EOF
+            
             echo "Cloud-init configuration applied to $ci_file"
         fi
     }

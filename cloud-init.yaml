@@ -26,11 +26,9 @@ runcmd:
   - echo "PermitRootLogin prohibit-password" >/etc/ssh/sshd_config.d/01-permitrootlogin.conf || sed -Ei 's/^#?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
   - systemctl restart sshd || systemctl restart ssh
   - printf '\n%s\n' 'Start installing custom packages...... ' >/dev/tty0 || true
+  # Rocky Linux 换源（Ubuntu 无需换源，包安装统一由 selfinstall.sh 处理）
   - |
-    if [ -f /etc/debian_version ]; then
-      apt update && apt install wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y >/dev/tty0 2>&1
-    elif [ -f /etc/redhat-release ]; then
-      # 读取主版本号（8 或 9）
+    if [ -f /etc/redhat-release ]; then
       . /etc/os-release
       VER=${VERSION_ID%%.*}
       # 换 Rocky Linux 官方仓库为中科大镜像（$releasever 由 dnf 自动解析，无需硬编码版本）
@@ -43,15 +41,13 @@ runcmd:
       sed -e 's|^metalink=|#metalink=|g' \
           -e 's|^#baseurl=https://download.example/pub/epel|baseurl=https://mirrors.ustc.edu.cn/epel|g' \
           -i /etc/yum.repos.d/epel*.repo 2>/dev/null || true
-      # 启用 EPEL 依赖仓库：Rocky 9 叫 crb，Rocky 8 叫 powertools
+      # 启用 EPEL 依赖仓库：Rocky 9+ 叫 crb，Rocky 8 叫 powertools
       if [ "$VER" -ge 9 ]; then
         dnf config-manager --set-enabled crb >/dev/tty0 2>&1
       else
         dnf config-manager --set-enabled powertools >/dev/tty0 2>&1
       fi
       dnf makecache >/dev/tty0 2>&1
-      dnf install -y wget aria2 curl git screen nmap lrzsz htop unzip vim net-tools nodejs rsync python3-pip java-11-openjdk-devel --skip-broken >/dev/tty0 2>&1
-      dnf groupinstall -y "Development Tools" >/dev/tty0 2>&1
     fi
   - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/selfinstall.sh | bash >/dev/tty0 2>&1
   - printf '\n%s\n' 'Enable BBR' >/dev/tty0 || true

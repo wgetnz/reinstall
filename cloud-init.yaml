@@ -30,16 +30,25 @@ runcmd:
     if [ -f /etc/debian_version ]; then
       apt update && apt install wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y >/dev/tty0 2>&1
     elif [ -f /etc/redhat-release ]; then
-      # 换 Rocky Linux 官方仓库为阿里云镜像（兼容 Rocky 8/9 两种文件名）
+      # 读取主版本号（8 或 9）
+      . /etc/os-release
+      VER=${VERSION_ID%%.*}
+      # 换 Rocky Linux 官方仓库为中科大镜像（$releasever 由 dnf 自动解析，无需硬编码版本）
       find /etc/yum.repos.d/ -iname 'rocky*.repo' -exec sed -i \
           -e 's|^mirrorlist=|#mirrorlist=|g' \
           -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.ustc.edu.cn/rocky|g' \
           {} \; 2>/dev/null || true
       dnf install -y epel-release >/dev/tty0 2>&1
-      # 换 EPEL 仓库为阿里云镜像
+      # 换 EPEL 仓库为中科大镜像
       sed -e 's|^metalink=|#metalink=|g' \
           -e 's|^#baseurl=https://download.example/pub/epel|baseurl=https://mirrors.ustc.edu.cn/epel|g' \
           -i /etc/yum.repos.d/epel*.repo 2>/dev/null || true
+      # 启用 EPEL 依赖仓库：Rocky 9 叫 crb，Rocky 8 叫 powertools
+      if [ "$VER" -ge 9 ]; then
+        dnf config-manager --set-enabled crb >/dev/tty0 2>&1
+      else
+        dnf config-manager --set-enabled powertools >/dev/tty0 2>&1
+      fi
       dnf makecache >/dev/tty0 2>&1
       dnf install -y wget aria2 curl git screen nmap lrzsz htop unzip vim net-tools nodejs rsync python3-pip java-11-openjdk-devel --skip-broken >/dev/tty0 2>&1
       dnf groupinstall -y "Development Tools" >/dev/tty0 2>&1

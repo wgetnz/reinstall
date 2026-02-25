@@ -3,7 +3,7 @@
 # 检查是否为Debian系列
 if [ -f /etc/debian_version ]; then
     echo "Detected Debian-based system."
-    sudo DEBIAN_FRONTEND=noninteractive apt update && sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y
+    sudo DEBIAN_FRONTEND=noninteractive apt update
     sudo DEBIAN_FRONTEND=noninteractive apt install -y wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk btop iputils-ping lrzsz
 	curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/go-install/master/install.sh | bash >/dev/tty0 2>&1
 	wget https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/refs/heads/main/.bashrc -O /root/.bashrc

@@ -33,12 +33,12 @@ runcmd:
       # 换 Rocky Linux 官方仓库为阿里云镜像（兼容 Rocky 8/9 两种文件名）
       find /etc/yum.repos.d/ -iname 'rocky*.repo' -exec sed -i \
           -e 's|^mirrorlist=|#mirrorlist=|g' \
-          -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.aliyun.com/rockylinux|g' \
+          -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.ustc.edu.cn/rocky|g' \
           {} \; 2>/dev/null || true
       dnf install -y epel-release >/dev/tty0 2>&1
       # 换 EPEL 仓库为阿里云镜像
       sed -e 's|^metalink=|#metalink=|g' \
-          -e 's|^#baseurl=https://download.example/pub/epel|baseurl=https://mirrors.aliyun.com/epel|g' \
+          -e 's|^#baseurl=https://download.example/pub/epel|baseurl=https://mirrors.ustc.edu.cn/epel|g' \
           -i /etc/yum.repos.d/epel*.repo 2>/dev/null || true
       dnf makecache >/dev/tty0 2>&1
       dnf install -y wget aria2 curl git screen nmap lrzsz htop unzip vim net-tools nodejs rsync python3-pip java-11-openjdk-devel --skip-broken >/dev/tty0 2>&1

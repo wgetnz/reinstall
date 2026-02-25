@@ -26,7 +26,14 @@ runcmd:
   - echo "PermitRootLogin prohibit-password" >/etc/ssh/sshd_config.d/01-permitrootlogin.conf || sed -Ei 's/^#?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
   - systemctl restart sshd || systemctl restart ssh
   - printf '\n%s\n' 'Start installing custom packages...... ' >/dev/tty0 || true
-  - apt update && apt install wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y >/dev/tty0 2>&1
+  - |
+    if [ -f /etc/debian_version ]; then
+      apt update && apt install wget aria2 curl git screen nmap lrzsz build-essential htop unzip vim net-tools nodejs rsync python3-pip openjdk-11-jdk -y >/dev/tty0 2>&1
+    elif [ -f /etc/redhat-release ]; then
+      dnf install -y epel-release >/dev/tty0 2>&1
+      dnf install -y wget aria2 curl git screen nmap lrzsz htop unzip vim net-tools nodejs rsync python3-pip java-11-openjdk-devel --skip-broken >/dev/tty0 2>&1
+      dnf groupinstall -y "Development Tools" >/dev/tty0 2>&1
+    fi
   - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/selfinstall.sh | bash >/dev/tty0 2>&1
   - printf '\n%s\n' 'Enable BBR' >/dev/tty0 || true
   - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/install_kernel.sh | bash >/dev/tty0 2>&1

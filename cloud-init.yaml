@@ -25,6 +25,42 @@ runcmd:
   - test $(wc -l </etc/ssh/sshd_config) -le 1 && cat /etc/ssh/sshd_config >>/etc/ssh/sshd_config.d/50-cloud-init.conf && rm -f /etc/ssh/sshd_config
   - echo "PermitRootLogin prohibit-password" >/etc/ssh/sshd_config.d/01-permitrootlogin.conf || sed -Ei 's/^#?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
   - systemctl restart sshd || systemctl restart ssh
+  # 配置 DoH（DNS over HTTPS）：下载 cloudflared，本地 127.0.0.1:53 跑 DoH 代理，上游 Cloudflare
+  # 此处只安装并 enable 服务，不立即切换 resolv.conf，避免打断后续 selfinstall/install_kernel 的下载
+  - |
+    case "$(uname -m)" in
+      x86_64|amd64) CF_ARCH=amd64 ;;
+      aarch64|arm64) CF_ARCH=arm64 ;;
+      armv7l|armv6l) CF_ARCH=arm ;;
+      *) CF_ARCH=amd64 ;;
+    esac
+    # 下载 cloudflared 二进制：先试官方 github.com 直连，失败再回退 freedns.uk 代理
+    CF_BIN=/usr/local/bin/cloudflared
+    CF_PATH="cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}"
+    curl -fL --connect-timeout 15 -o "$CF_BIN" "https://github.com/${CF_PATH}" >/dev/tty0 2>&1 \
+      || curl -fL --connect-timeout 15 -o "$CF_BIN" "https://github.freedns.uk/https://github.com/${CF_PATH}" >/dev/tty0 2>&1
+    chmod +x "$CF_BIN"
+    # systemd 服务：本地 DoH 代理，双上游 1.1.1.1 / 1.0.0.1（直接用 IP，无需 bootstrap DNS）
+    cat >/etc/systemd/system/cloudflared-doh.service <<'EOF'
+    [Unit]
+    Description=cloudflared DNS over HTTPS proxy
+    After=network-online.target
+    Wants=network-online.target
+
+    [Service]
+    ExecStart=/usr/local/bin/cloudflared proxy-dns --address 127.0.0.1 --port 53 --upstream https://1.1.1.1/dns-query --upstream https://223.5.5.5/dns-query --upstream https://1.12.12.12/dns-query --upstream https://8.8.8.8/dns-query
+    Restart=on-failure
+    RestartSec=2
+    DynamicUser=true
+    AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+    # systemd-resolved 默认占用 stub 解析并管理 resolv.conf，关掉它，改用 cloudflared
+    systemctl disable --now systemd-resolved >/dev/tty0 2>&1 || true
+    systemctl daemon-reload
+    systemctl enable cloudflared-doh.service >/dev/tty0 2>&1
   - printf '\n%s\n' 'Start installing custom packages...... ' >/dev/tty0 || true
   # Rocky Linux 换源（Ubuntu 无需换源，包安装统一由 selfinstall.sh 处理）
   - |
@@ -53,9 +89,15 @@ runcmd:
   - printf '\n%s\n' 'Enable BBR' >/dev/tty0 || true
   - curl -L https://github.freedns.uk/https://raw.githubusercontent.com/wgetnz/reinstall/main/install_kernel.sh | bash >/dev/tty0 2>&1
   - touch /etc/cloud/cloud-init.disabled
+  # 重启前一刻切换系统 DNS 到本地 DoH 代理并锁定，重启后 cloudflared 自动启动，全程走 DoH
+  - |
+    chattr -i /etc/resolv.conf 2>/dev/null || true
+    rm -f /etc/resolv.conf
+    printf 'nameserver 127.0.0.1\noptions edns0 trust-ad\n' >/etc/resolv.conf
+    chattr +i /etc/resolv.conf 2>/dev/null || true
   # ubuntu 镜像运行 echo -e '\nDone' ，-e 会被显示出来
   - printf '\n%s\n' 'Reinstall OK ...Reboot...' >/dev/tty0 || true
-  - sleep 5 
+  - sleep 5
   - reboot
   # 生成超强随机密码并设置为root密码
   #- RANDOM_PASS=$(openssl rand -base64 32) && echo "root:$RANDOM_PASS" | chpasswd

@@ -44,20 +44,20 @@ usage_and_exit() {
         reinstall_____=' ./reinstall.sh'
     fi
     cat <<EOF
-Usage: $reinstall_____ anolis      7|8
-                       rocky       8|9
-                       redhat      8|9 --img='http://xxx.com/xxx.qcow2'
-                       almalinux   8|9
-                       opencloudos 8|9
+Usage: $reinstall_____ anolis      7|8|23
+                       rocky       8|9|10
+                       redhat      8|9|10 --img='http://xxx.com/xxx.qcow2'
+                       almalinux   8|9|10
+                       opencloudos 8|9|23
                        centos      9|10
-                       oracle      7|8|9
-                       fedora      40|41
-                       nixos       24.11
-                       debian      9|10|11|12
+                       oracle      7|8|9|10
+                       fedora      40|41|43|44
+                       nixos       24.11|26.05
+                       debian      9|10|11|12|13
                        openeuler   20.03|22.03|24.03
-                       alpine      3.18|3.19|3.20|3.21
-                       opensuse    15.5|15.6|tumbleweed
-                       ubuntu      16.04|18.04|20.04|22.04|24.04 [--minimal]
+                       alpine      3.18|3.19|3.20|3.21|3.22|3.23|3.24
+                       opensuse    15.5|15.6|16.0|tumbleweed
+                       ubuntu      16.04|18.04|20.04|22.04|24.04|26.04 [--minimal]
                        kali
                        arch
                        gentoo
@@ -217,6 +217,10 @@ is_port_valid() {
 
 get_host_by_url() {
     cut -d/ -f3 <<<$1
+}
+
+get_scheme_and_host_by_url() {
+    cut -d/ -f1-3 <<<$1
 }
 
 get_function() {
@@ -572,6 +576,25 @@ is_virt() {
     $_is_virt
 }
 
+is_cpu_supports_x86_64_v3() {
+    # 用 ld.so/cpuid/coreinfo.exe 更准确
+    # 这里仅做安装前快速阻断，避免 EL 10 在不支持 x86-64-v3 的机器上装完无法启动
+    need_flags="avx avx2 bmi1 bmi2 f16c fma movbe xsave"
+    had_flags=$(grep -m 1 ^flags /proc/cpuinfo | awk -F': ' '{print $2}')
+
+    for flag in $need_flags; do
+        if ! grep -qw $flag <<<"$had_flags"; then
+            return 1
+        fi
+    done
+}
+
+assert_cpu_supports_x86_64_v3() {
+    if ! is_cpu_supports_x86_64_v3; then
+        error_and_exit "Could not install $distro $releasever because the CPU does not support x86-64-v3."
+    fi
+}
+
 # sr-latn-rs 到 sr-latn
 en_us() {
     echo "$lang" | awk -F- '{print $1"-"$2}'
@@ -708,18 +731,13 @@ is_have_arm_version() {
     case "$version" in
     10)
         case "$edition" in
-        pro | education | enterprise | 'pro education' | 'pro for workstations') return ;;
+        home | 'home single language' | pro | education | enterprise | 'pro education' | 'pro for workstations') return ;;
         'iot enterprise') return ;;
+        # arm ltsc 只有 2021 有 iso
         'enterprise ltsc 2021' | 'iot enterprise ltsc 2021') return ;;
         esac
         ;;
-    11)
-        case "$edition" in
-        pro | education | enterprise | 'pro education' | 'pro for workstations') return ;;
-        'iot enterprise' | 'iot enterprise subscription') return ;;
-        'enterprise ltsc 2024' | 'iot enterprise ltsc 2024' | 'iot enterprise ltsc 2024 subscription') return ;;
-        esac
-        ;;
+    11) return ;;
     esac
     return 1
 }
@@ -741,8 +759,14 @@ find_windows_iso() {
     full_lang=$(english)
 
     case "$basearch" in
-    x86_64) arch_win=x64 ;;
-    aarch64) arch_win=arm64 ;;
+    x86_64)
+        arch_win=x64
+        arch_win_vlsc=64bit
+        ;;
+    aarch64)
+        arch_win=arm64
+        arch_win_vlsc=arm64
+        ;;
     esac
 
     get_windows_iso_links
@@ -804,7 +828,13 @@ get_windows_iso_links() {
             10)
                 case "$edition" in
                 home | 'home single language') echo consumer ;;
-                pro | education | enterprise | 'pro education' | 'pro for workstations') echo business ;;
+                pro | enterprise) echo business ;;
+                education | 'pro education' | 'pro for workstations')
+                    case "$arch_win" in
+                    arm64) echo consumer ;;
+                    x64) echo business ;; # iso 更小
+                    esac
+                    ;;
                 # iot
                 'iot enterprise') echo 'iot enterprise' ;;
                 # iot ltsc
@@ -821,13 +851,21 @@ get_windows_iso_links() {
                 esac
                 ;;
             11)
+                # arm business iso 都没有 education, pro education, pro for workstations
+                # 即使它的名字包含 EDU
                 case "$edition" in
                 home | 'home single language') echo consumer ;;
-                pro | education | enterprise | 'pro education' | 'pro for workstations') echo business ;;
+                pro | enterprise) echo business ;;
+                education | 'pro education' | 'pro for workstations')
+                    case "$arch_win" in
+                    arm64) echo consumer ;;
+                    x64) echo business ;; # iso 更小
+                    esac
+                    ;;
                 # iot
                 'iot enterprise' | 'iot enterprise subscription') echo 'iot enterprise' ;;
                 # iot ltsc
-                'iot enterprise ltsc 2024' | 'iot enterprise ltsc 2024 subscription') echo 'iot enterprise ltsc 2024' ;;
+                'iot enterprise ltsc 2024' | 'iot enterprise ltsc 2024 subscription' | 'iot enterprise subscription ltsc 2024') echo 'iot enterprise ltsc 2024' ;;
                 # ltsc
                 'enterprise ltsc 2024')
                     # arm64 的 enterprise ltsc 2024 要下载 iot enterprise ltsc 2024 iso
@@ -848,6 +886,9 @@ get_windows_iso_links() {
             case "$edition" in
             pro | education | enterprise | 'pro education' | 'pro for workstations') echo pro ;;
             esac
+            ;;
+        2025)
+            echo SrvSTDCORE
             ;;
         esac
     }
@@ -872,12 +913,16 @@ get_windows_iso_links() {
         grep -Ewq 'ltsb|ltsc' <<<"$edition"
     }
 
-    # 部分 bash 不支持 $() 里面嵌套case，所以定义成函数
+    # 部分 bash 例如 ubuntu 22.04 不支持 $() 里面嵌套case，所以定义成函数
     label_msdn=$(get_label_msdn)
     label_vlsc=$(get_label_vlsc)
     page=$(get_page)
 
-    page_url=https://massgrave.dev/windows_${page}_links
+    if [ "$page" = server ]; then
+        page_url=https://massgrave.dev/windows-server-links
+    else
+        page_url=https://massgrave.dev/windows_${page}_links
+    fi
 
     info "Find windows iso"
     echo "Version:    $version"
@@ -888,10 +933,20 @@ get_windows_iso_links() {
     echo
 
     if [ -z "$page" ] || { [ -z "$label_msdn" ] && [ -z "$label_vlsc" ]; }; then
-        error_and_exit "Not support find this iso. Check if --image-name is wrong. If not, set --iso manually."
+        error_and_exit "Not support find this iso. Check if --image-name is wrong. Or set --iso manually."
     fi
 
-    curl -L "$page_url" | grep -ioP 'https://.*?.(iso|img)' >$tmp/win.list
+    http_to_host=$(get_scheme_and_host_by_url "$page_url")
+    http_to_current_dir=$(dirname "$page_url")
+    curl -L "$page_url" |
+        tr -d '\n' | sed -e 's,<a ,\n<a ,g' -e 's,</a>,</a>\n,g' | # 使每个 <a></a> 占一行
+        grep -Ei '\.(iso|img)</a>$' |                              # 找出是 iso 或 img 的行
+        # 提取文件名和链接
+        # 如果链接是 / 开头，则补全域名
+        # 如果链接非 https:// 开头，则补全域名和目录
+        sed -E -e 's,<a href="?([^" ]+)"?.+>(.+)</a>,\2 \1,' \
+            -e "s, (/), $http_to_host\1," |
+        awk '{if ($2 !~ /^https?:\/\//) $2 = "'$http_to_current_dir/'" $2; print}' >$tmp/win.list
 
     # 如果不是 ltsc ，应该先去除 ltsc 链接，否则最终链接有 ltsc 的
     # 例如查找 windows 10 iot enterprise，会得到
@@ -908,6 +963,11 @@ get_windows_iso_links() {
 get_shortest_line() {
     # awk '{print length($0), $0}' | sort -n | head -1 | awk '{print $2}'
     awk '(NR == 1 || length($0) < length(shortest)) { shortest = $0 } END { print shortest }'
+}
+
+get_shortest_line_by_field() {
+    local field=$1
+    awk "(NR == 1 || length(\$$field) < length(field)) { line = \$0; field = \$$field } END { print line }"
 }
 
 get_windows_iso_link() {
@@ -931,8 +991,11 @@ get_windows_iso_link() {
     fi
 
     # vlsc
-    if [ -n "$label_vlsc" ]; then
-        regex="sw_dvd[59]_win_${label_vlsc}_${version}.*${arch_win}_${full_lang}.*.(iso|img)"
+    # SW_DVD5_Win_10_IOT_Enterprise_2015_LTSB_64Bit_EMB_English_OEM_X20-20063.IMG
+    # SW_DVD9_Win_Pro_10_22H2.15_Arm64_English_Pro_Ent_EDU_N_MLF_X23-67223.ISO
+    # SWDVD9_WinSrvSTDCORE2025_24H2.16_64Bit_English_DC_STD_MLF_RTMUpdJan26_X24-26760.iso
+    if [ -n "$label_vlsc" ] && [ -n "$full_lang" ]; then
+        regex="sw_?dvd[59]_win_?${label_vlsc}_?${version}.*${arch_win_vlsc}_${full_lang}.*.(iso|img)"
         regexs+=("$regex")
     fi
 
@@ -941,7 +1004,9 @@ get_windows_iso_link() {
         regex=${regex// /_}
 
         echo "looking for: $regex" >&2
-        if iso=$(grep -Ei "/$regex" "$tmp/win.list" | get_shortest_line | grep .); then
+        if line=$(grep -Ei "^$regex " "$tmp/win.list" | get_shortest_line_by_field 1 | grep .) &&
+            iso=$(awk '{print $2}' <<<"$line" | grep .); then
+            echo "Selected: $line" >&2
             return
         fi
     done
@@ -998,6 +1063,7 @@ setos() {
         10) codename=buster ;;
         11) codename=bullseye ;;
         12) codename=bookworm ;;
+        13) codename=trixie ;;
         esac
 
         if is_in_china; then
@@ -1107,6 +1173,7 @@ Continue?
         20.04) codename=focal ;;
         22.04) codename=jammy ;;
         24.04) codename=noble ;;
+        26.04) codename=resolute ;;
         esac
 
         if is_use_cloud_image; then
@@ -1369,21 +1436,35 @@ Continue with DD?
     }
 
     setos_centos_almalinux_rocky_fedora() {
+        # EL 10（Rocky/CentOS）需要 x86-64-v3
+        if [ "$basearch" = x86_64 ] &&
+            { [ "$distro" = centos ] || [ "$distro" = rocky ]; } &&
+            [ "$releasever" -ge 10 ]; then
+            assert_cpu_supports_x86_64_v3
+        fi
+
+        elarch=$basearch
+        if [ "$basearch" = x86_64 ] &&
+            [ "$distro" = almalinux ] && [ "$releasever" -ge 10 ] &&
+            ! is_cpu_supports_x86_64_v3; then
+            elarch=x86_64_v2
+        fi
+
         if is_use_cloud_image; then
             # ci
             if is_in_china; then
                 case $distro in
                 centos) ci_mirror="https://mirror.nju.edu.cn/centos-cloud/centos" ;;
-                almalinux) ci_mirror="https://mirror.nju.edu.cn/almalinux/$releasever/cloud/$basearch/images" ;;
-                rocky) ci_mirror="https://mirror.nju.edu.cn/rocky/$releasever/images/$basearch" ;;
-                fedora) ci_mirror="https://mirror.nju.edu.cn/fedora/releases/$releasever/Cloud/$basearch/images" ;;
+                almalinux) ci_mirror="https://mirror.nju.edu.cn/almalinux/$releasever/cloud/$elarch/images" ;;
+                rocky) ci_mirror="https://mirror.nju.edu.cn/rocky/$releasever/images/$elarch" ;;
+                fedora) ci_mirror="https://mirror.nju.edu.cn/fedora/releases/$releasever/Cloud/$elarch/images" ;;
                 esac
             else
                 case $distro in
                 centos) ci_mirror="https://cloud.centos.org/centos" ;;
-                almalinux) ci_mirror="https://repo.almalinux.org/almalinux/$releasever/cloud/$basearch/images" ;;
-                rocky) ci_mirror="https://download.rockylinux.org/pub/rocky/$releasever/images/$basearch" ;;
-                fedora) ci_mirror="https://dl.fedoraproject.org/pub/fedora/linux/releases/$releasever/Cloud/$basearch/images" ;;
+                almalinux) ci_mirror="https://repo.almalinux.org/almalinux/$releasever/cloud/$elarch/images" ;;
+                rocky) ci_mirror="https://download.rockylinux.org/pub/rocky/$releasever/images/$elarch" ;;
+                fedora) ci_mirror="https://dl.fedoraproject.org/pub/fedora/linux/releases/$releasever/Cloud/$elarch/images" ;;
                 esac
             fi
             case $distro in
@@ -1392,13 +1473,17 @@ Continue with DD?
                 7)
                     # CentOS-7-aarch64-GenericCloud.qcow2c 是旧版本
                     ver=-2211
-                    ci_image=$ci_mirror/$releasever/images/CentOS-$releasever-$basearch-GenericCloud$ver.qcow2c
+                    ci_image=$ci_mirror/$releasever/images/CentOS-$releasever-$elarch-GenericCloud$ver.qcow2c
                     ;;
-                *) ci_image=$ci_mirror/$releasever-stream/$basearch/images/CentOS-Stream-GenericCloud-$releasever-latest.$basearch.qcow2 ;;
+                *)
+                    [ "$elarch" = x86_64 ] &&
+                        ci_image=$ci_mirror/$releasever-stream/$elarch/images/CentOS-Stream-GenericCloud-x86_64-$releasever-latest.$elarch.qcow2 ||
+                        ci_image=$ci_mirror/$releasever-stream/$elarch/images/CentOS-Stream-GenericCloud-$releasever-latest.$elarch.qcow2
+                    ;;
                 esac
                 ;;
-            almalinux) ci_image=$ci_mirror/AlmaLinux-$releasever-GenericCloud-latest.$basearch.qcow2 ;;
-            rocky) ci_image=$ci_mirror/Rocky-$releasever-GenericCloud-Base.latest.$basearch.qcow2 ;;
+            almalinux) ci_image=$ci_mirror/AlmaLinux-$releasever-GenericCloud-latest.$elarch.qcow2 ;;
+            rocky) ci_image=$ci_mirror/Rocky-$releasever-GenericCloud-Base.latest.$elarch.qcow2 ;;
             fedora)
                 filename=$(curl -L $ci_mirror | grep -oP "Fedora-Cloud-Base-Generic.*?.qcow2" |
                     sort -uV | tail -1 | grep .)
@@ -1441,6 +1526,11 @@ Continue with DD?
     }
 
     setos_oracle() {
+        # EL 10 需要 x86-64-v3
+        if [ "$basearch" = x86_64 ] && [ "$releasever" -ge 10 ]; then
+            assert_cpu_supports_x86_64_v3
+        fi
+
         if is_use_cloud_image; then
             # ci
             install_pkg jq
@@ -1463,6 +1553,9 @@ Continue with DD?
     setos_redhat() {
         if is_use_cloud_image; then
             # ci
+            if [ "$basearch" = x86_64 ] && [[ "$img" = *rhel-10* ]]; then
+                assert_cpu_supports_x86_64_v3
+            fi
             eval "${step}_img='$img'"
         else
             :
@@ -1471,10 +1564,19 @@ Continue with DD?
 
     setos_opencloudos() {
         # https://mirrors.opencloudos.tech 不支持 ipv6
-        mirror=https://mirrors.cloud.tencent.com/opencloudos
+        # https://mirrors.cloud.tencent.com 没有 stream
+        if [ "$releasever" -ge 23 ]; then
+            mirror=https://mirrors.opencloudos.tech/opencloudos-stream/releases
+        else
+            mirror=https://mirrors.cloud.tencent.com/opencloudos
+        fi
         if is_use_cloud_image; then
             # ci
-            dir=$releasever/images/$basearch
+            if [ "$releasever" -eq 9 ]; then
+                dir=$releasever/images/qcow2/$basearch
+            else
+                dir=$releasever/images/$basearch
+            fi
             file=$(curl -L $mirror/$dir/ | grep -oP 'OpenCloudOS.*?\.qcow2' |
                 sort -uV | tail -1 | grep .)
             eval ${step}_img=$mirror/$dir/$file
@@ -1489,7 +1591,10 @@ Continue with DD?
         if is_use_cloud_image; then
             # ci
             dir=$releasever/isos/GA/$basearch
-            file=$(curl -L $mirror/$dir/ | grep -oP 'AnolisOS.*?-ANCK\.qcow2' |
+            [ "$releasever" -ge 23 ] &&
+                filename='AnolisOS.*?\.qcow2' ||
+                filename='AnolisOS.*?-ANCK\.qcow2'
+            file=$(curl -L $mirror/$dir/ | grep -oP "$filename" |
                 sort -uV | tail -1 | grep .)
             eval ${step}_img=$mirror/$dir/$file
         else
@@ -1560,19 +1665,19 @@ verify_os_name() {
     # 不要删除 centos 7
     for os in \
         'centos      7|9|10' \
-        'anolis      7|8' \
-        'almalinux   8|9' \
-        'rocky       8|9' \
-        'redhat      8|9' \
-        'opencloudos 8|9' \
-        'oracle      7|8|9' \
-        'fedora      40|41' \
-        'nixos       24.11' \
-        'debian      9|10|11|12' \
+        'anolis      7|8|23' \
+        'almalinux   8|9|10' \
+        'rocky       8|9|10' \
+        'redhat      8|9|10' \
+        'opencloudos 8|9|23' \
+        'oracle      7|8|9|10' \
+        'fedora      40|41|43|44' \
+        'nixos       24.11|26.05' \
+        'debian      9|10|11|12|13' \
         'openeuler   20.03|22.03|24.03' \
-        'alpine      3.18|3.19|3.20|3.21' \
-        'opensuse    15.5|15.6|tumbleweed' \
-        'ubuntu      16.04|18.04|20.04|22.04|24.04' \
+        'alpine      3.18|3.19|3.20|3.21|3.22|3.23|3.24' \
+        'opensuse    15.5|15.6|16.0|tumbleweed' \
+        'ubuntu      16.04|18.04|20.04|22.04|24.04|26.04' \
         'kali' \
         'arch' \
         'gentoo' \
